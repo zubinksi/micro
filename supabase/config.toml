@@ -28,8 +28,6 @@ additional_redirect_urls = ["micro://"]
 jwt_expiry = 3600
 enable_refresh_token_rotation = true
 
-[auth.sms]
-enabled = true
 
 [edge_runtime]
 enabled = true
