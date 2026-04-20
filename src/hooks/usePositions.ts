@@ -31,17 +31,28 @@ export function useStake() {
 export function useResolve() {
   const resolve = useCallback(async (params: {
     marketId: string;
+    userId: string;
     outcome: Outcome;
     evidenceUrl?: string;
   }) => {
-    const { data, error } = await supabase.functions.invoke('resolve', {
-      body: {
-        market_id: params.marketId,
-        outcome: params.outcome,
-        evidence_url: params.evidenceUrl,
-      },
-    });
-    return { data, error };
+    // 1. Insert resolution record
+    const { error: rErr } = await supabase
+      .from('resolutions')
+      .insert({
+        market_id:    params.marketId,
+        outcome:      params.outcome,
+        evidence_url: params.evidenceUrl ?? null,
+        resolved_by:  params.userId,
+      });
+    if (rErr) return { error: rErr };
+
+    // 2. Move market to 'resolving' (48hr dispute window begins)
+    const { error: mErr } = await supabase
+      .from('markets')
+      .update({ status: 'resolving' })
+      .eq('id', params.marketId);
+
+    return { error: mErr };
   }, []);
 
   const dispute = useCallback(async (resolutionId: string, userId: string, vote: Outcome) => {

@@ -40,12 +40,12 @@ export default function MarketDetailScreen() {
   }, [user, id, stake, fetchMarket]);
 
   const handleResolve = useCallback(async (outcome: Outcome, evidenceUrl?: string) => {
-    if (!id) return;
-    const { error } = await resolve({ marketId: id, outcome, evidenceUrl });
+    if (!id || !user) return;
+    const { error } = await resolve({ marketId: id, userId: user.id, outcome, evidenceUrl });
     if (error) throw new Error(error.message ?? 'Failed to resolve');
     setResolveModal(false);
     await fetchMarket();
-  }, [id, resolve, fetchMarket]);
+  }, [id, user, resolve, fetchMarket]);
 
   const handleDispute = useCallback(async (vote: Outcome) => {
     if (!market?.resolution || !user) return;
