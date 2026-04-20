@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@/hooks/useAuth';
-import { useGroupMarkets } from '@/hooks/useMarkets';
+import { supabase } from '@/lib/supabase';
 import { COLORS, STAKE_MAX, STAKE_MIN } from '@/lib/constants';
 import type { ResolverType } from '@/lib/types';
 
@@ -18,7 +18,6 @@ const RESOLVER_OPTIONS: { value: ResolverType; label: string; desc: string }[] =
 export default function CreateMarketScreen() {
   const { groupId } = useLocalSearchParams<{ groupId: string }>();
   const { user } = useAuth();
-  const { createMarket } = useGroupMarkets(groupId, user?.id);
 
   const [question, setQuestion]     = useState('');
   const [criteria, setCriteria]     = useState('');
@@ -30,6 +29,8 @@ export default function CreateMarketScreen() {
   const isValid = question.trim().length >= 10 && criteria.trim().length >= 10 && closesAt.trim().length > 0;
 
   const handleCreate = async () => {
+    if (!user || !groupId) return;
+
     const closeDate = new Date(closesAt);
     if (isNaN(closeDate.getTime()) || closeDate <= new Date()) {
       setError('Closing date must be in the future.');
@@ -38,16 +39,24 @@ export default function CreateMarketScreen() {
 
     setLoading(true);
     setError('');
-    const { data, error } = await createMarket({
-      question:            question.trim(),
-      resolution_criteria: criteria.trim(),
-      closes_at:           closeDate.toISOString(),
-      resolver_type:       resolverType,
-      resolver_id:         resolverType === 'autocrat' ? user?.id : undefined,
-    });
+
+    const { data, error: err } = await supabase
+      .from('markets')
+      .insert({
+        group_id:            groupId,
+        creator_id:          user.id,
+        question:            question.trim(),
+        resolution_criteria: criteria.trim(),
+        closes_at:           closeDate.toISOString(),
+        resolver_type:       resolverType,
+        resolver_id:         resolverType === 'autocrat' ? user.id : null,
+      })
+      .select('id')
+      .single();
+
     setLoading(false);
 
-    if (error) { setError(error.message); return; }
+    if (err) { setError(err.message); return; }
     if (data) router.replace(`/markets/${data.id}`);
   };
 
@@ -82,14 +91,13 @@ export default function CreateMarketScreen() {
         />
         <Text style={styles.hint}>Be specific. Ambiguity causes disputes.</Text>
 
-        <Text style={styles.label}>Closes at (ISO date or YYYY-MM-DD HH:MM) *</Text>
+        <Text style={styles.label}>Closes at (YYYY-MM-DD HH:MM) *</Text>
         <TextInput
           style={styles.input}
           value={closesAt}
           onChangeText={setClosesAt}
           placeholder="2026-06-15 23:59"
           placeholderTextColor={COLORS.textDim}
-          keyboardType="default"
         />
 
         <Text style={styles.label}>Resolution method *</Text>
@@ -105,9 +113,7 @@ export default function CreateMarketScreen() {
               </Text>
               <Text style={styles.resolverDesc}>{opt.desc}</Text>
             </View>
-            {resolverType === opt.value && (
-              <View style={styles.dot} />
-            )}
+            {resolverType === opt.value && <View style={styles.dot} />}
           </TouchableOpacity>
         ))}
 
@@ -135,24 +141,24 @@ export default function CreateMarketScreen() {
 }
 
 const styles = StyleSheet.create({
-  container:          { flex: 1, backgroundColor: COLORS.bg },
-  inner:              { padding: 20, paddingBottom: 48 },
-  label:              { color: COLORS.textMuted, fontSize: 13, fontWeight: '600', marginBottom: 8, marginTop: 20 },
-  input:              { backgroundColor: COLORS.surface, borderColor: COLORS.border, borderWidth: 1, borderRadius: 12, padding: 14, fontSize: 15, color: COLORS.text },
-  multiline:          { minHeight: 90, textAlignVertical: 'top' },
-  charCount:          { color: COLORS.textDim, fontSize: 11, textAlign: 'right', marginTop: 4 },
-  hint:               { color: COLORS.textDim, fontSize: 12, marginTop: 6, marginBottom: 4 },
-  resolverOption:     { backgroundColor: COLORS.surface, borderRadius: 12, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: COLORS.border, flexDirection: 'row', alignItems: 'center' },
-  resolverSelected:   { borderColor: COLORS.primary },
-  resolverLeft:       { flex: 1 },
-  resolverLabel:      { color: COLORS.text, fontWeight: '600', fontSize: 14 },
-  resolverLabelActive:{ color: COLORS.primary },
-  resolverDesc:       { color: COLORS.textMuted, fontSize: 12, marginTop: 2 },
-  dot:                { width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.primary },
-  infoBox:            { backgroundColor: COLORS.surfaceAlt, borderRadius: 10, padding: 12, marginTop: 20 },
-  infoText:           { color: COLORS.textMuted, fontSize: 12, lineHeight: 18 },
-  error:              { color: COLORS.no, marginTop: 12, fontSize: 13 },
-  btn:                { backgroundColor: COLORS.primary, borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginTop: 24 },
-  btnDisabled:        { opacity: 0.5 },
-  btnText:            { color: '#fff', fontWeight: '700', fontSize: 16 },
+  container:           { flex: 1, backgroundColor: COLORS.bg },
+  inner:               { padding: 20, paddingBottom: 48 },
+  label:               { color: COLORS.textMuted, fontSize: 13, fontWeight: '600', marginBottom: 8, marginTop: 20 },
+  input:               { backgroundColor: COLORS.surface, borderColor: COLORS.border, borderWidth: 1, borderRadius: 12, padding: 14, fontSize: 15, color: COLORS.text },
+  multiline:           { minHeight: 90, textAlignVertical: 'top' },
+  charCount:           { color: COLORS.textDim, fontSize: 11, textAlign: 'right', marginTop: 4 },
+  hint:                { color: COLORS.textDim, fontSize: 12, marginTop: 6, marginBottom: 4 },
+  resolverOption:      { backgroundColor: COLORS.surface, borderRadius: 12, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: COLORS.border, flexDirection: 'row', alignItems: 'center' },
+  resolverSelected:    { borderColor: COLORS.primary },
+  resolverLeft:        { flex: 1 },
+  resolverLabel:       { color: COLORS.text, fontWeight: '600', fontSize: 14 },
+  resolverLabelActive: { color: COLORS.primary },
+  resolverDesc:        { color: COLORS.textMuted, fontSize: 12, marginTop: 2 },
+  dot:                 { width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.primary },
+  infoBox:             { backgroundColor: COLORS.surfaceAlt, borderRadius: 10, padding: 12, marginTop: 20 },
+  infoText:            { color: COLORS.textMuted, fontSize: 12, lineHeight: 18 },
+  error:               { color: COLORS.no, marginTop: 12, fontSize: 13 },
+  btn:                 { backgroundColor: COLORS.primary, borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginTop: 24 },
+  btnDisabled:         { opacity: 0.5 },
+  btnText:             { color: '#fff', fontWeight: '700', fontSize: 16 },
 });
