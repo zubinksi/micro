@@ -1,5 +1,4 @@
--- Enable required extensions
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+-- pgcrypto is pre-installed on Supabase; gen_random_uuid() is built-in on PG14+
 
 -- ─── Profiles ────────────────────────────────────────────────────────────────
 
@@ -23,7 +22,7 @@ CREATE TABLE groups (
   id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name         text NOT NULL,
   description  text,
-  invite_code  text UNIQUE DEFAULT upper(encode(gen_random_bytes(4), 'hex')),
+  invite_code  text UNIQUE DEFAULT upper(substring(replace(gen_random_uuid()::text, '-', '') from 1 for 8)),
   admin_id     uuid NOT NULL REFERENCES profiles(id),
   created_at   timestamptz DEFAULT now()
 );
