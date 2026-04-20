@@ -33,19 +33,16 @@ export default function MarketDetailScreen() {
   // Throw on error so StakeModal / ResolveModal catch and display it inline
   const handleStake = useCallback(async (outcome: Outcome, amount: number) => {
     if (!user || !id) return;
-    const { data, error } = await stake({ marketId: id, userId: user.id, outcome, amount });
+    const { error } = await stake({ marketId: id, userId: user.id, outcome, amount });
     if (error) throw new Error(error.message ?? 'Failed to stake');
-    // Edge function errors come back as data.error (non-2xx wrapped by supabase client)
-    if (data?.error) throw new Error(data.error);
     setStakeModal(false);
     await fetchMarket();
   }, [user, id, stake, fetchMarket]);
 
   const handleResolve = useCallback(async (outcome: Outcome, evidenceUrl?: string) => {
     if (!id) return;
-    const { data, error } = await resolve({ marketId: id, outcome, evidenceUrl });
+    const { error } = await resolve({ marketId: id, outcome, evidenceUrl });
     if (error) throw new Error(error.message ?? 'Failed to resolve');
-    if (data?.error) throw new Error(data.error);
     setResolveModal(false);
     await fetchMarket();
   }, [id, resolve, fetchMarket]);

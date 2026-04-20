@@ -9,14 +9,19 @@ export function useStake() {
     outcome: Outcome;
     amount: number;
   }) => {
-    // Delegate to the edge function for atomic pool update + position insert
-    const { data, error } = await supabase.functions.invoke('stake', {
-      body: {
+    // Insert position directly — the DB trigger handles pool total updates atomically.
+    // Unique constraint (market_id, user_id) prevents double-staking.
+    const { data, error } = await supabase
+      .from('positions')
+      .insert({
         market_id: params.marketId,
-        outcome: params.outcome,
-        stake: params.amount,
-      },
-    });
+        user_id:   params.userId,
+        outcome:   params.outcome,
+        stake:     params.amount,
+      })
+      .select()
+      .single();
+
     return { data, error };
   }, []);
 
