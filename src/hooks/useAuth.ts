@@ -37,12 +37,11 @@ export function useAuth() {
       });
   }, [user]);
 
-  const signInWithOtp = useCallback(async (phone: string) => {
-    return supabase.auth.signInWithOtp({ phone });
-  }, []);
-
-  const verifyOtp = useCallback(async (phone: string, token: string) => {
-    return supabase.auth.verifyOtp({ phone, token, type: 'sms' });
+  const sendMagicLink = useCallback(async (email: string) => {
+    return supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: window.location.origin },
+    });
   }, []);
 
   const signOut = useCallback(async () => {
@@ -61,5 +60,5 @@ export function useAuth() {
     return { data, error };
   }, [user]);
 
-  return { session, user, profile, loading, signInWithOtp, verifyOtp, signOut, updateProfile };
+  return { session, user, profile, loading, sendMagicLink, signOut, updateProfile };
 }
