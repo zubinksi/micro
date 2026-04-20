@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  TextInput, KeyboardAvoidingView, Platform, Alert, ActivityIndicator,
+  TextInput, KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -28,25 +28,33 @@ export default function MarketDetailScreen() {
   const [resolveModal, setResolveModal] = useState(false);
   const [comment,      setComment]      = useState('');
   const [posting,      setPosting]      = useState(false);
+  const [disputeError, setDisputeError] = useState('');
 
+  // Throw on error so StakeModal / ResolveModal catch and display it inline
   const handleStake = useCallback(async (outcome: Outcome, amount: number) => {
     if (!user || !id) return;
-    const { error } = await stake({ marketId: id, userId: user.id, outcome, amount });
-    if (error) Alert.alert('Error', error.message ?? 'Failed to stake');
-    else { setStakeModal(false); await fetchMarket(); }
+    const { data, error } = await stake({ marketId: id, userId: user.id, outcome, amount });
+    if (error) throw new Error(error.message ?? 'Failed to stake');
+    // Edge function errors come back as data.error (non-2xx wrapped by supabase client)
+    if (data?.error) throw new Error(data.error);
+    setStakeModal(false);
+    await fetchMarket();
   }, [user, id, stake, fetchMarket]);
 
   const handleResolve = useCallback(async (outcome: Outcome, evidenceUrl?: string) => {
     if (!id) return;
-    const { error } = await resolve({ marketId: id, outcome, evidenceUrl });
-    if (error) Alert.alert('Error', error.message ?? 'Failed to resolve');
-    else { setResolveModal(false); await fetchMarket(); }
+    const { data, error } = await resolve({ marketId: id, outcome, evidenceUrl });
+    if (error) throw new Error(error.message ?? 'Failed to resolve');
+    if (data?.error) throw new Error(data.error);
+    setResolveModal(false);
+    await fetchMarket();
   }, [id, resolve, fetchMarket]);
 
   const handleDispute = useCallback(async (vote: Outcome) => {
     if (!market?.resolution || !user) return;
+    setDisputeError('');
     const { error } = await dispute(market.resolution.id, user.id, vote);
-    if (error) Alert.alert('Error', 'Could not cast dispute vote.');
+    if (error) setDisputeError('Could not cast dispute vote.');
     else await fetchMarket();
   }, [market, user, dispute, fetchMarket]);
 
@@ -161,6 +169,7 @@ export default function MarketDetailScreen() {
               </View>
             )}
 
+            {disputeError ? <Text style={styles.error}>{disputeError}</Text> : null}
             {myDisputeVote && (
               <Text style={styles.disputeVoted}>You voted {myDisputeVote.vote} in the dispute.</Text>
             )}
@@ -239,6 +248,7 @@ const styles = StyleSheet.create({
   badge_settled:   { backgroundColor: '#22c55e22' },
   badge_voided:    { backgroundColor: '#ef444422' },
   badgeText:       { fontSize: 11, fontWeight: '700', color: COLORS.textMuted, letterSpacing: 1 },
+  error:           { color: COLORS.no, fontSize: 13, marginTop: 8 },
   question:        { fontSize: 22, fontWeight: '700', color: COLORS.text, lineHeight: 30, marginBottom: 10 },
   criteria:        { fontSize: 13, color: COLORS.textMuted, lineHeight: 19, marginBottom: 20 },
   poolRow:         { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6, marginBottom: 20 },
