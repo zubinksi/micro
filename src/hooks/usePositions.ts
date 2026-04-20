@@ -1,0 +1,92 @@
+import { useCallback } from 'react';
+import { supabase } from '@/lib/supabase';
+import type { Outcome } from '@/lib/types';
+
+export function useStake() {
+  const stake = useCallback(async (params: {
+    marketId: string;
+    userId: string;
+    outcome: Outcome;
+    amount: number;
+  }) => {
+    // Delegate to the edge function for atomic pool update + position insert
+    const { data, error } = await supabase.functions.invoke('stake', {
+      body: {
+        market_id: params.marketId,
+        outcome: params.outcome,
+        stake: params.amount,
+      },
+    });
+    return { data, error };
+  }, []);
+
+  return { stake };
+}
+
+export function useResolve() {
+  const resolve = useCallback(async (params: {
+    marketId: string;
+    outcome: Outcome;
+    evidenceUrl?: string;
+  }) => {
+    const { data, error } = await supabase.functions.invoke('resolve', {
+      body: {
+        market_id: params.marketId,
+        outcome: params.outcome,
+        evidence_url: params.evidenceUrl,
+      },
+    });
+    return { data, error };
+  }, []);
+
+  const dispute = useCallback(async (resolutionId: string, userId: string, vote: Outcome) => {
+    return supabase.from('dispute_votes').insert({
+      resolution_id: resolutionId,
+      user_id: userId,
+      vote,
+    });
+  }, []);
+
+  return { resolve, dispute };
+}
+
+export function useSettlements(userId: string | undefined) {
+  const fetchSettlements = useCallback(async () => {
+    if (!userId) return [];
+    const { data } = await supabase
+      .from('settlements')
+      .select(`
+        *,
+        from_profile:profiles!settlements_from_user_id_fkey ( id, username, display_name ),
+        to_profile:profiles!settlements_to_user_id_fkey ( id, username, display_name ),
+        market:markets ( id, question )
+      `)
+      .or(`from_user_id.eq.${userId},to_user_id.eq.${userId}`)
+      .eq('settled', false)
+      .order('created_at', { ascending: false });
+    return (data as any[]) ?? [];
+  }, [userId]);
+
+  const markSettled = useCallback(async (settlementId: string) => {
+    return supabase
+      .from('settlements')
+      .update({ settled: true, settled_at: new Date().toISOString() })
+      .eq('id', settlementId);
+  }, []);
+
+  return { fetchSettlements, markSettled };
+}
+
+export function useLeaderboard(groupId: string | undefined) {
+  const fetchLeaderboard = useCallback(async () => {
+    if (!groupId) return [];
+    const { data } = await supabase
+      .from('user_group_stats')
+      .select('*, profile:profiles(*)')
+      .eq('group_id', groupId)
+      .order('total_profit', { ascending: false });
+    return (data as any[]) ?? [];
+  }, [groupId]);
+
+  return { fetchLeaderboard };
+}
