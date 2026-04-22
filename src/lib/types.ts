@@ -31,7 +31,7 @@ export interface GroupMember {
 
 export interface Market {
   id: string;
-  group_id: string;
+  group_id: string | null;
   creator_id: string;
   question: string;
   resolution_criteria: string;
@@ -42,6 +42,7 @@ export interface Market {
   status: MarketStatus;
   yes_pool: number;
   no_pool: number;
+  invite_code: string;
   created_at: string;
   // joined via query
   creator?: Profile;

@@ -6,16 +6,18 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerStyle: { backgroundColor: COLORS.bg },
+        headerStyle: { backgroundColor: COLORS.surface },
         headerTintColor: COLORS.text,
         headerTitleStyle: { fontWeight: '700' },
+        headerTitleAlign: 'center',
+        headerShadowVisible: false,
         tabBarStyle: {
           backgroundColor: COLORS.surface,
           borderTopColor: COLORS.border,
           borderTopWidth: 1,
         },
         tabBarActiveTintColor: COLORS.primary,
-        tabBarInactiveTintColor: COLORS.textMuted,
+        tabBarInactiveTintColor: COLORS.textDim,
       }}
     >
       <Tabs.Screen
@@ -26,18 +28,15 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="groups"
-        options={{
-          title: 'Groups',
-          tabBarIcon: ({ color, size }) => <Ionicons name="people" size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
         name="settle"
         options={{
           title: 'Settle',
           tabBarIcon: ({ color, size }) => <Ionicons name="wallet" size={size} color={color} />,
         }}
+      />
+      <Tabs.Screen
+        name="groups"
+        options={{ href: null }}
       />
     </Tabs>
   );

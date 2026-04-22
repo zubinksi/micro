@@ -19,21 +19,18 @@ const STATUS_COLOR: Record<string, string> = {
   voided:    COLORS.no,
 };
 
-export function MarketCard({ market, onPress, showGroup, groupName }: Props) {
-  const odds = getPoolOdds(market);
-  const myPos = market.my_position;
+export function MarketCard({ market, onPress }: Props) {
+  const odds    = getPoolOdds(market);
+  const myPos   = market.my_position;
   const timeLeft = getTimeLeft(market.closes_at);
 
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.8}>
+    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.75}>
 
       {/* Top row */}
       <View style={styles.topRow}>
-        {showGroup && groupName && (
-          <Text style={styles.groupTag}>{groupName}</Text>
-        )}
         <View style={[styles.statusDot, { backgroundColor: STATUS_COLOR[market.status] ?? COLORS.textDim }]} />
-        <Text style={styles.status}>{market.status}</Text>
+        <Text style={styles.status}>{capitalize(market.status)}</Text>
         <Text style={styles.time}>{timeLeft}</Text>
       </View>
 
@@ -41,11 +38,13 @@ export function MarketCard({ market, onPress, showGroup, groupName }: Props) {
       <Text style={styles.question} numberOfLines={2}>{market.question}</Text>
 
       {/* Probability bar */}
-      <ProbabilityBar odds={odds} height={8} />
+      <ProbabilityBar odds={odds} height={6} />
 
       {/* Bottom row */}
       <View style={styles.bottomRow}>
-        <Text style={styles.pool}>${odds.totalPool.toFixed(0)} pool · {getParticipantCount(market)} participants</Text>
+        <Text style={styles.pool}>
+          ${odds.totalPool.toFixed(0)} pool · {getParticipantCount(market)} participant{getParticipantCount(market) !== 1 ? 's' : ''}
+        </Text>
         {myPos && (
           <View style={[styles.myPos, myPos.outcome === 'YES' ? styles.myPosYes : styles.myPosNo]}>
             <Text style={styles.myPosText}>{myPos.outcome} ${myPos.stake}</Text>
@@ -54,6 +53,10 @@ export function MarketCard({ market, onPress, showGroup, groupName }: Props) {
       </View>
     </TouchableOpacity>
   );
+}
+
+function capitalize(s: string) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 function getTimeLeft(closesAt: string): string {
@@ -67,25 +70,28 @@ function getTimeLeft(closesAt: string): string {
 }
 
 function getParticipantCount(market: Market): number {
-  // Approximated from pool (no position list in card query)
   return market.yes_pool > 0 || market.no_pool > 0 ? 1 : 0;
 }
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: COLORS.surface, borderRadius: 14, padding: 16,
-    marginHorizontal: 16, marginBottom: 10, borderWidth: 1, borderColor: COLORS.border,
+    backgroundColor: COLORS.surface,
+    borderRadius: 14,
+    padding: 16,
+    marginHorizontal: 16,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   topRow:    { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
-  groupTag:  { fontSize: 11, color: COLORS.primary, fontWeight: '700', marginRight: 4 },
   statusDot: { width: 7, height: 7, borderRadius: 3.5 },
-  status:    { fontSize: 11, color: COLORS.textMuted, textTransform: 'capitalize', flex: 1 },
+  status:    { fontSize: 11, color: COLORS.textMuted, fontWeight: '500', flex: 1 },
   time:      { fontSize: 11, color: COLORS.textDim },
   question:  { fontSize: 16, fontWeight: '700', color: COLORS.text, marginBottom: 14, lineHeight: 22 },
   bottomRow: { flexDirection: 'row', alignItems: 'center', marginTop: 10 },
   pool:      { flex: 1, fontSize: 12, color: COLORS.textMuted },
-  myPos:     { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1 },
-  myPosYes:  { backgroundColor: COLORS.yes + '22', borderColor: COLORS.yes },
-  myPosNo:   { backgroundColor: COLORS.no + '22', borderColor: COLORS.no },
-  myPosText: { fontSize: 12, fontWeight: '700', color: COLORS.text },
+  myPos:     { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
+  myPosYes:  { backgroundColor: COLORS.yes },
+  myPosNo:   { backgroundColor: COLORS.no },
+  myPosText: { fontSize: 12, fontWeight: '700', color: '#fff' },
 });
