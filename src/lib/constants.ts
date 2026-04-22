@@ -1,17 +1,17 @@
 export const COLORS = {
-  bg: '#0a0a0a',
-  surface: '#141414',
-  surfaceAlt: '#1c1c1e',
-  border: '#2a2a2a',
-  primary: '#6366f1',      // indigo
-  primaryDim: '#4338ca',
+  bg: '#F5F6FA',
+  surface: '#FFFFFF',
+  surfaceAlt: '#F0F1F5',
+  border: '#E8E9EE',
+  primary: '#4B7BF5',      // blue
+  primaryDim: '#2B5BD5',
   yes: '#22c55e',          // green
   no: '#ef4444',           // red
-  text: '#f5f5f5',
-  textMuted: '#737373',
-  textDim: '#404040',
+  text: '#111111',
+  textMuted: '#777777',
+  textDim: '#BBBBBB',
   warning: '#f59e0b',
-  settled: '#a3e635',
+  settled: '#16a34a',
 } as const;
 
 export const STAKE_MIN = 1;

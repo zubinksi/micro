@@ -10,7 +10,7 @@ import { useMarket, useComments } from '@/hooks/useMarkets';
 import { useStake, useResolve } from '@/hooks/usePositions';
 import { COLORS, STAKE_MIN, STAKE_MAX, DISPUTE_WINDOW_HOURS } from '@/lib/constants';
 import { getPoolOdds, getPayoutPreview } from '@/utils/pool';
-import { shareOutcomeCard } from '@/utils/share';
+import { shareOutcomeCard, shareMarketInvite } from '@/utils/share';
 import { ProbabilityBar } from '@/components/ProbabilityBar';
 import { StakeModal } from '@/components/StakeModal';
 import { ResolveModal } from '@/components/ResolveModal';
@@ -30,7 +30,6 @@ export default function MarketDetailScreen() {
   const [posting,      setPosting]      = useState(false);
   const [disputeError, setDisputeError] = useState('');
 
-  // Throw on error so StakeModal / ResolveModal catch and display it inline
   const handleStake = useCallback(async (outcome: Outcome, amount: number) => {
     if (!user || !id) return;
     const { error } = await stake({ marketId: id, userId: user.id, outcome, amount });
@@ -67,42 +66,59 @@ export default function MarketDetailScreen() {
     return <View style={styles.center}><ActivityIndicator color={COLORS.primary} /></View>;
   }
 
-  const odds       = getPoolOdds(market);
-  const myPosition = market.my_position;
-  const resolution = market.resolution;
-  const isOpen     = market.status === 'open';
-  const isLocked   = market.status === 'locked';
+  const odds        = getPoolOdds(market);
+  const myPosition  = market.my_position;
+  const resolution  = market.resolution;
+  const isOpen      = market.status === 'open';
+  const isLocked    = market.status === 'locked';
   const isResolving = market.status === 'resolving';
-  const isSettled  = market.status === 'settled';
-  const canResolve = (market.resolver_type === 'autocrat' && market.resolver_id === user?.id)
+  const isSettled   = market.status === 'settled';
+  const canResolve  = (market.resolver_type === 'autocrat' && market.resolver_id === user?.id)
     || (market.resolver_type === 'consensus' && !!myPosition)
     || (market.creator_id === user?.id);
-  const canStake   = isOpen && !myPosition;
+  const canStake = isOpen && !myPosition;
 
   const disputeDeadline = resolution
     ? new Date(new Date(resolution.created_at).getTime() + DISPUTE_WINDOW_HOURS * 3600_000)
     : null;
-  const disputeOpen = disputeDeadline && disputeDeadline > new Date() && !resolution?.disputed;
+  const disputeOpen   = disputeDeadline && disputeDeadline > new Date() && !resolution?.disputed;
   const myDisputeVote = resolution?.dispute_votes?.find(v => v.user_id === user?.id);
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Stack.Screen options={{
         title: '',
-        headerRight: isSettled && myPosition
-          ? () => (
-            <TouchableOpacity onPress={() => shareOutcomeCard(market, myPosition, resolution?.outcome === myPosition.outcome)}>
-              <Ionicons name="share-outline" size={22} color={COLORS.text} />
-            </TouchableOpacity>
-          )
-          : undefined,
+        headerRight: () => (
+          <View style={styles.headerActions}>
+            {/* Share invite code */}
+            {market.invite_code && (
+              <TouchableOpacity
+                style={styles.headerBtn}
+                onPress={() => shareMarketInvite(market.question, market.invite_code)}
+              >
+                <Ionicons name="person-add-outline" size={20} color={COLORS.textMuted} />
+              </TouchableOpacity>
+            )}
+            {/* Share outcome (settled markets) */}
+            {isSettled && myPosition && (
+              <TouchableOpacity
+                style={styles.headerBtn}
+                onPress={() => shareOutcomeCard(market, myPosition, resolution?.outcome === myPosition.outcome)}
+              >
+                <Ionicons name="share-outline" size={20} color={COLORS.textMuted} />
+              </TouchableOpacity>
+            )}
+          </View>
+        ),
       }} />
 
       <ScrollView contentContainerStyle={styles.inner}>
 
         {/* Status badge */}
-        <View style={[styles.badge, styles[`badge_${market.status}`]]}>
-          <Text style={styles.badgeText}>{market.status.toUpperCase()}</Text>
+        <View style={[styles.badge, styles[`badge_${market.status}` as keyof typeof styles]]}>
+          <Text style={[styles.badgeText, { color: STATUS_TEXT[market.status] ?? COLORS.textMuted }]}>
+            {market.status.toUpperCase()}
+          </Text>
         </View>
 
         {/* Question */}
@@ -130,7 +146,7 @@ export default function MarketDetailScreen() {
           </View>
         )}
 
-        {/* CTA buttons */}
+        {/* CTAs */}
         {canStake && (
           <TouchableOpacity style={styles.stakeBtn} onPress={() => setStakeModal(true)}>
             <Text style={styles.stakeBtnText}>Take a position</Text>
@@ -143,10 +159,25 @@ export default function MarketDetailScreen() {
           </TouchableOpacity>
         )}
 
+        {/* Invite code strip */}
+        {(isOpen || isLocked) && market.invite_code && (
+          <TouchableOpacity
+            style={styles.inviteStrip}
+            onPress={() => shareMarketInvite(market.question, market.invite_code)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.inviteLabel}>Invite code</Text>
+            <Text style={styles.inviteCode}>{market.invite_code}</Text>
+            <Ionicons name="share-outline" size={16} color={COLORS.primary} />
+          </TouchableOpacity>
+        )}
+
         {/* Resolution card */}
         {resolution && (
           <View style={styles.resolutionCard}>
-            <Text style={styles.resTitle}>Resolution: <Text style={resolution.outcome === 'YES' ? styles.yes : styles.no}>{resolution.outcome}</Text></Text>
+            <Text style={styles.resTitle}>
+              Resolution: <Text style={resolution.outcome === 'YES' ? styles.yes : styles.no}>{resolution.outcome}</Text>
+            </Text>
             {resolution.evidence_url && (
               <Text style={styles.resEvidence}>Evidence: {resolution.evidence_url}</Text>
             )}
@@ -186,7 +217,9 @@ export default function MarketDetailScreen() {
           <View key={c.id} style={styles.commentRow}>
             <View style={styles.commentMeta}>
               <Text style={styles.commentUser}>@{c.profile?.username}</Text>
-              <Text style={styles.commentTime}>{new Date(c.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+              <Text style={styles.commentTime}>
+                {new Date(c.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </Text>
               {c.user_id === user?.id && (
                 <TouchableOpacity onPress={() => deleteComment(c.id)}>
                   <Ionicons name="trash-outline" size={13} color={COLORS.textDim} />
@@ -234,17 +267,27 @@ export default function MarketDetailScreen() {
   );
 }
 
+const STATUS_TEXT: Record<string, string> = {
+  open:      COLORS.yes,
+  locked:    COLORS.warning,
+  resolving: COLORS.primary,
+  settled:   COLORS.textMuted,
+  voided:    COLORS.no,
+};
+
 const styles = StyleSheet.create({
   container:       { flex: 1, backgroundColor: COLORS.bg },
   center:          { flex: 1, alignItems: 'center', justifyContent: 'center' },
   inner:           { padding: 20, paddingBottom: 40 },
+  headerActions:   { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  headerBtn:       { padding: 6 },
   badge:           { alignSelf: 'flex-start', borderRadius: 6, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 12 },
-  badge_open:      { backgroundColor: '#16a34a22' },
-  badge_locked:    { backgroundColor: '#f59e0b22' },
-  badge_resolving: { backgroundColor: '#6366f122' },
-  badge_settled:   { backgroundColor: '#22c55e22' },
-  badge_voided:    { backgroundColor: '#ef444422' },
-  badgeText:       { fontSize: 11, fontWeight: '700', color: COLORS.textMuted, letterSpacing: 1 },
+  badge_open:      { backgroundColor: '#dcfce7' },
+  badge_locked:    { backgroundColor: '#fef3c7' },
+  badge_resolving: { backgroundColor: '#ede9fe' },
+  badge_settled:   { backgroundColor: '#f0fdf4' },
+  badge_voided:    { backgroundColor: '#fee2e2' },
+  badgeText:       { fontSize: 11, fontWeight: '700', letterSpacing: 1 },
   error:           { color: COLORS.no, fontSize: 13, marginTop: 8 },
   question:        { fontSize: 22, fontWeight: '700', color: COLORS.text, lineHeight: 30, marginBottom: 10 },
   criteria:        { fontSize: 13, color: COLORS.textMuted, lineHeight: 19, marginBottom: 20 },
@@ -253,8 +296,8 @@ const styles = StyleSheet.create({
   poolNo:          { color: COLORS.no, fontWeight: '600', fontSize: 13 },
   poolTotal:       { color: COLORS.textMuted, fontSize: 13 },
   myPosition:      { borderRadius: 12, padding: 14, marginBottom: 16, borderWidth: 1 },
-  posYes:          { backgroundColor: '#16a34a11', borderColor: COLORS.yes },
-  posNo:           { backgroundColor: '#ef444411', borderColor: COLORS.no },
+  posYes:          { backgroundColor: '#f0fdf4', borderColor: COLORS.yes },
+  posNo:           { backgroundColor: '#fef2f2', borderColor: COLORS.no },
   myPosLabel:      { fontSize: 11, color: COLORS.textMuted, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1 },
   myPosValue:      { fontSize: 18, fontWeight: '800', color: COLORS.text, marginTop: 4 },
   myPosResult:     { fontSize: 14, marginTop: 4, fontWeight: '600', color: COLORS.text },
@@ -262,7 +305,10 @@ const styles = StyleSheet.create({
   stakeBtnText:    { color: '#fff', fontWeight: '700', fontSize: 16 },
   resolveBtn:      { borderWidth: 1, borderColor: COLORS.primary, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginBottom: 12 },
   resolveBtnText:  { color: COLORS.primary, fontWeight: '700', fontSize: 15 },
-  resolutionCard:  { backgroundColor: COLORS.surfaceAlt, borderRadius: 12, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: COLORS.border },
+  inviteStrip:     { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: COLORS.surface, borderRadius: 10, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: COLORS.border },
+  inviteLabel:     { color: COLORS.textMuted, fontSize: 12 },
+  inviteCode:      { flex: 1, color: COLORS.text, fontWeight: '700', fontFamily: 'monospace', letterSpacing: 2, fontSize: 14 },
+  resolutionCard:  { backgroundColor: COLORS.surface, borderRadius: 12, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: COLORS.border },
   resTitle:        { fontSize: 16, fontWeight: '700', color: COLORS.text, marginBottom: 4 },
   resEvidence:     { color: COLORS.textMuted, fontSize: 13, marginBottom: 4 },
   resBy:           { color: COLORS.textDim, fontSize: 12 },
@@ -271,8 +317,8 @@ const styles = StyleSheet.create({
   disputeWrap:     { marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: COLORS.border },
   disputeLabel:    { color: COLORS.textMuted, fontSize: 13, marginBottom: 10 },
   disputeBtns:     { flexDirection: 'row', gap: 10 },
-  disputeYes:      { flex: 1, backgroundColor: COLORS.yes + '33', borderRadius: 8, paddingVertical: 10, alignItems: 'center' },
-  disputeNo:       { flex: 1, backgroundColor: COLORS.no + '33', borderRadius: 8, paddingVertical: 10, alignItems: 'center' },
+  disputeYes:      { flex: 1, backgroundColor: '#dcfce7', borderRadius: 8, paddingVertical: 10, alignItems: 'center' },
+  disputeNo:       { flex: 1, backgroundColor: '#fee2e2', borderRadius: 8, paddingVertical: 10, alignItems: 'center' },
   disputeBtnText:  { color: COLORS.text, fontWeight: '700', fontSize: 14 },
   disputeVoted:    { color: COLORS.textMuted, fontSize: 13, marginTop: 10 },
   meta:            { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 24 },

@@ -18,23 +18,22 @@ export default function RootLayout() {
 
   return (
     <>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <Stack
         screenOptions={{
-          headerStyle: { backgroundColor: COLORS.bg },
+          headerStyle: { backgroundColor: COLORS.surface },
           headerTintColor: COLORS.text,
           headerTitleStyle: { fontWeight: '600' },
+          headerShadowVisible: false,
           contentStyle: { backgroundColor: COLORS.bg },
           animation: 'slide_from_right',
         }}
       >
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="groups/create" options={{ title: 'New Group', presentation: 'modal' }} />
-        <Stack.Screen name="groups/join"   options={{ title: 'Join Group',  presentation: 'modal' }} />
-        <Stack.Screen name="groups/[id]"   options={{ title: 'Group' }} />
-        <Stack.Screen name="markets/create" options={{ title: 'New Market', presentation: 'modal' }} />
-        <Stack.Screen name="markets/[id]"   options={{ title: 'Market' }} />
+        <Stack.Screen name="markets/create" options={{ title: 'New Market', presentation: 'modal', headerTitleAlign: 'center' }} />
+        <Stack.Screen name="markets/join"   options={{ title: 'Join Market',  presentation: 'modal', headerTitleAlign: 'center' }} />
+        <Stack.Screen name="markets/[id]"   options={{ title: '' }} />
       </Stack>
     </>
   );
