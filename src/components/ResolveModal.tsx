@@ -69,7 +69,7 @@ export function ResolveModal({ market, onConfirm, onClose }: Props) {
 
         <View style={styles.warningBox}>
           <Text style={styles.warningText}>
-            Participants have {market.resolver_type === 'consensus' ? '48 hours' : 'no window'} to dispute this resolution.
+            Participants have 48 hours to dispute this resolution.
             If &gt;50% dispute, stakes are returned.
           </Text>
         </View>

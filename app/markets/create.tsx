@@ -32,9 +32,8 @@ function getPresetDate(preset: Exclude<DurationPreset, 'custom'>): Date {
 // ─── Resolver options ─────────────────────────────────────────────────────────
 
 const RESOLVER_OPTIONS: { value: ResolverType; label: string; desc: string }[] = [
-  { value: 'consensus', label: 'Consensus',       desc: 'Majority vote among participants' },
-  { value: 'autocrat',  label: 'Creator decides', desc: 'You resolve it unilaterally' },
-  { value: 'oracle',    label: 'Oracle / link',   desc: 'Point to an external data source' },
+  { value: 'autocrat', label: 'Creator decides', desc: 'You resolve it manually when the market closes' },
+  { value: 'ai',       label: 'Claude decides',  desc: 'AI reads your reference links and resolves automatically' },
 ];
 
 // ─── Simple calendar picker ───────────────────────────────────────────────────
@@ -154,18 +153,27 @@ export default function CreateMarketScreen() {
     return d;
   });
   const [showCalendar, setShowCalendar] = useState(false);
-  const [resolverType, setResolver]  = useState<ResolverType>('consensus');
+  const [resolverType, setResolver]  = useState<ResolverType>('autocrat');
+  const [refUrls,      setRefUrls]   = useState<string[]>(['']);
   const [loading,      setLoading]   = useState(false);
   const [error,        setError]     = useState('');
 
   const closesAt = duration === 'custom' ? customDate : getPresetDate(duration as Exclude<DurationPreset, 'custom'>);
   const isValid  = question.trim().length >= 10 && criteria.trim().length >= 10;
 
+  const addRefUrl    = () => setRefUrls(prev => [...prev, '']);
+  const updateRefUrl = (i: number, val: string) =>
+    setRefUrls(prev => prev.map((u, idx) => idx === i ? val : u));
+  const removeRefUrl = (i: number) =>
+    setRefUrls(prev => prev.filter((_, idx) => idx !== i));
+
   const handleCreate = async () => {
     if (!user || !isValid) return;
 
     setLoading(true);
     setError('');
+
+    const cleanUrls = refUrls.map(u => u.trim()).filter(Boolean);
 
     const { data, error: err } = await supabase
       .from('markets')
@@ -176,6 +184,7 @@ export default function CreateMarketScreen() {
         closes_at:           closesAt.toISOString(),
         resolver_type:       resolverType,
         resolver_id:         resolverType === 'autocrat' ? user.id : null,
+        reference_urls:      cleanUrls.length > 0 ? cleanUrls : null,
       })
       .select('id')
       .single();
@@ -263,6 +272,37 @@ export default function CreateMarketScreen() {
           </TouchableOpacity>
         ))}
 
+        {resolverType === 'ai' && (
+          <View style={styles.refSection}>
+            <Text style={styles.refLabel}>Reference links</Text>
+            <Text style={styles.refHint}>
+              Claude will read these pages to determine the outcome — use direct links to results or news articles.
+            </Text>
+            {refUrls.map((url, i) => (
+              <View key={i} style={styles.refRow}>
+                <TextInput
+                  style={styles.refInput}
+                  value={url}
+                  onChangeText={v => updateRefUrl(i, v)}
+                  placeholder="https://espn.com/..."
+                  placeholderTextColor={COLORS.textDim}
+                  keyboardType="url"
+                  autoCapitalize="none"
+                />
+                {refUrls.length > 1 && (
+                  <TouchableOpacity onPress={() => removeRefUrl(i)}>
+                    <Ionicons name="close-circle" size={20} color={COLORS.textDim} />
+                  </TouchableOpacity>
+                )}
+              </View>
+            ))}
+            <TouchableOpacity style={styles.addRefBtn} onPress={addRefUrl}>
+              <Ionicons name="add" size={16} color={COLORS.primary} />
+              <Text style={styles.addRefText}>Add another link</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
         <TouchableOpacity
@@ -309,7 +349,14 @@ const styles = StyleSheet.create({
   resolverLabelActive: { color: COLORS.primary },
   resolverDesc:        { color: COLORS.textMuted, fontSize: 12, marginTop: 2 },
   dot:                 { width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.primary },
-  error:               { color: COLORS.no, marginTop: 12, fontSize: 13 },
+  refSection:  { marginTop: 16, backgroundColor: COLORS.surfaceAlt, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: COLORS.border },
+  refLabel:    { color: COLORS.text, fontWeight: '600', fontSize: 14, marginBottom: 4 },
+  refHint:     { color: COLORS.textMuted, fontSize: 12, lineHeight: 17, marginBottom: 12 },
+  refRow:      { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+  refInput:    { flex: 1, backgroundColor: COLORS.surface, borderColor: COLORS.border, borderWidth: 1, borderRadius: 10, padding: 10, fontSize: 13, color: COLORS.text },
+  addRefBtn:   { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
+  addRefText:  { color: COLORS.primary, fontSize: 13, fontWeight: '600' },
+  error:       { color: COLORS.no, marginTop: 12, fontSize: 13 },
   btn:                 { backgroundColor: COLORS.primary, borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginTop: 28 },
   btnDisabled:         { opacity: 0.4 },
   btnText:             { color: '#fff', fontWeight: '700', fontSize: 16 },

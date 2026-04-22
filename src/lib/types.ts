@@ -1,5 +1,5 @@
 export type MarketStatus = 'open' | 'locked' | 'resolving' | 'settled' | 'voided';
-export type ResolverType = 'autocrat' | 'consensus' | 'oracle';
+export type ResolverType = 'autocrat' | 'ai';
 export type Outcome = 'YES' | 'NO';
 
 export interface Profile {
@@ -39,6 +39,7 @@ export interface Market {
   resolves_at: string | null;
   resolver_type: ResolverType;
   resolver_id: string | null;
+  reference_urls: string[] | null;
   status: MarketStatus;
   yes_pool: number;
   no_pool: number;

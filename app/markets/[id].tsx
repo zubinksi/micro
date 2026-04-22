@@ -8,9 +8,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
 import { useMarket, useComments } from '@/hooks/useMarkets';
 import { useStake, useResolve } from '@/hooks/usePositions';
+import { supabase } from '@/lib/supabase';
 import { COLORS, STAKE_MIN, STAKE_MAX, DISPUTE_WINDOW_HOURS } from '@/lib/constants';
-import { getPoolOdds, getPayoutPreview } from '@/utils/pool';
-import { shareOutcomeCard, shareMarketInvite } from '@/utils/share';
+import { getPoolOdds } from '@/utils/pool';
+import { shareOutcomeCard, shareMarketLink } from '@/utils/share';
 import { ProbabilityBar } from '@/components/ProbabilityBar';
 import { StakeModal } from '@/components/StakeModal';
 import { ResolveModal } from '@/components/ResolveModal';
@@ -29,6 +30,8 @@ export default function MarketDetailScreen() {
   const [comment,      setComment]      = useState('');
   const [posting,      setPosting]      = useState(false);
   const [disputeError, setDisputeError] = useState('');
+  const [aiResolving,  setAiResolving]  = useState(false);
+  const [aiError,      setAiError]      = useState('');
 
   const handleStake = useCallback(async (outcome: Outcome, amount: number) => {
     if (!user || !id) return;
@@ -45,6 +48,21 @@ export default function MarketDetailScreen() {
     setResolveModal(false);
     await fetchMarket();
   }, [id, user, resolve, fetchMarket]);
+
+  const handleAiResolve = useCallback(async () => {
+    if (!id || !user) return;
+    setAiResolving(true);
+    setAiError('');
+    const { error } = await supabase.functions.invoke('resolve-ai', {
+      body: { market_id: id },
+    });
+    setAiResolving(false);
+    if (error) {
+      setAiError('Claude could not determine an outcome — try again or resolve manually.');
+    } else {
+      await fetchMarket();
+    }
+  }, [id, user, fetchMarket]);
 
   const handleDispute = useCallback(async (vote: Outcome) => {
     if (!market?.resolution || !user) return;
@@ -73,9 +91,7 @@ export default function MarketDetailScreen() {
   const isLocked    = market.status === 'locked';
   const isResolving = market.status === 'resolving';
   const isSettled   = market.status === 'settled';
-  const canResolve  = (market.resolver_type === 'autocrat' && market.resolver_id === user?.id)
-    || (market.resolver_type === 'consensus' && !!myPosition)
-    || (market.creator_id === user?.id);
+  const canResolve  = market.creator_id === user?.id;
   const canStake = isOpen && !myPosition;
 
   const disputeDeadline = resolution
@@ -94,7 +110,7 @@ export default function MarketDetailScreen() {
             {market.invite_code && (
               <TouchableOpacity
                 style={styles.headerBtn}
-                onPress={() => shareMarketInvite(market.question, market.invite_code)}
+                onPress={() => shareMarketLink(market)}
               >
                 <Ionicons name="person-add-outline" size={20} color={COLORS.textMuted} />
               </TouchableOpacity>
@@ -154,16 +170,39 @@ export default function MarketDetailScreen() {
         )}
 
         {(isLocked || isResolving) && canResolve && !resolution && (
-          <TouchableOpacity style={styles.resolveBtn} onPress={() => setResolveModal(true)}>
-            <Text style={styles.resolveBtnText}>Resolve market</Text>
-          </TouchableOpacity>
+          market.resolver_type === 'ai' ? (
+            <View>
+              <TouchableOpacity
+                style={[styles.resolveBtn, aiResolving && styles.resolveBtnDisabled]}
+                onPress={handleAiResolve}
+                disabled={aiResolving}
+              >
+                {aiResolving ? (
+                  <ActivityIndicator color={COLORS.primary} />
+                ) : (
+                  <View style={styles.resolveBtnInner}>
+                    <Ionicons name="sparkles" size={16} color={COLORS.primary} />
+                    <Text style={styles.resolveBtnText}>Resolve with Claude</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.manualBtn} onPress={() => setResolveModal(true)}>
+                <Text style={styles.manualBtnText}>Override manually instead</Text>
+              </TouchableOpacity>
+              {aiError ? <Text style={styles.error}>{aiError}</Text> : null}
+            </View>
+          ) : (
+            <TouchableOpacity style={styles.resolveBtn} onPress={() => setResolveModal(true)}>
+              <Text style={styles.resolveBtnText}>Resolve market</Text>
+            </TouchableOpacity>
+          )
         )}
 
         {/* Invite code strip */}
         {(isOpen || isLocked) && market.invite_code && (
           <TouchableOpacity
             style={styles.inviteStrip}
-            onPress={() => shareMarketInvite(market.question, market.invite_code)}
+            onPress={() => shareMarketLink(market)}
             activeOpacity={0.7}
           >
             <Text style={styles.inviteLabel}>Invite code</Text>
@@ -181,7 +220,9 @@ export default function MarketDetailScreen() {
             {resolution.evidence_url && (
               <Text style={styles.resEvidence}>Evidence: {resolution.evidence_url}</Text>
             )}
-            <Text style={styles.resBy}>Resolved by @{resolution.resolver?.username}</Text>
+            <Text style={styles.resBy}>
+              Resolved by {market.resolver_type === 'ai' ? 'Claude' : `@${resolution.resolver?.username}`}
+            </Text>
 
             {disputeOpen && !myDisputeVote && (
               <View style={styles.disputeWrap}>
@@ -208,7 +249,7 @@ export default function MarketDetailScreen() {
         <View style={styles.meta}>
           <Text style={styles.metaItem}>Closes {new Date(market.closes_at).toLocaleDateString()}</Text>
           <Text style={styles.metaItem}>by @{market.creator?.username}</Text>
-          <Text style={styles.metaItem}>{market.resolver_type} resolution</Text>
+          <Text style={styles.metaItem}>{market.resolver_type === 'ai' ? 'Claude resolves' : 'Creator resolves'}</Text>
         </View>
 
         {/* Comments */}
@@ -303,8 +344,12 @@ const styles = StyleSheet.create({
   myPosResult:     { fontSize: 14, marginTop: 4, fontWeight: '600', color: COLORS.text },
   stakeBtn:        { backgroundColor: COLORS.primary, borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginBottom: 12 },
   stakeBtnText:    { color: '#fff', fontWeight: '700', fontSize: 16 },
-  resolveBtn:      { borderWidth: 1, borderColor: COLORS.primary, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginBottom: 12 },
-  resolveBtnText:  { color: COLORS.primary, fontWeight: '700', fontSize: 15 },
+  resolveBtn:          { borderWidth: 1, borderColor: COLORS.primary, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginBottom: 8 },
+  resolveBtnDisabled:  { opacity: 0.5 },
+  resolveBtnInner:     { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  resolveBtnText:      { color: COLORS.primary, fontWeight: '700', fontSize: 15 },
+  manualBtn:           { paddingVertical: 8, alignItems: 'center', marginBottom: 4 },
+  manualBtnText:       { color: COLORS.textDim, fontSize: 13 },
   inviteStrip:     { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: COLORS.surface, borderRadius: 10, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: COLORS.border },
   inviteLabel:     { color: COLORS.textMuted, fontSize: 12 },
   inviteCode:      { flex: 1, color: COLORS.text, fontWeight: '700', fontFamily: 'monospace', letterSpacing: 2, fontSize: 14 },
