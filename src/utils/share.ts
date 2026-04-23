@@ -6,7 +6,7 @@ function getAppBaseUrl(): string {
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
     return window.location.origin;
   }
-  return 'https://micro.vercel.app';
+  return 'https://micro-sage.vercel.app';
 }
 
 export async function shareMarketLink(market: Market) {
