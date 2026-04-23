@@ -48,6 +48,7 @@ export interface Market {
   // joined via query
   creator?: Profile;
   my_position?: Position | null;
+  position_count?: number;
   comment_count?: number;
   resolution?: Resolution | null;
 }

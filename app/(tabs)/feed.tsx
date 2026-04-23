@@ -24,14 +24,16 @@ export default function FeedScreen() {
       .from('markets')
       .select(`
         *,
-        creator:profiles!markets_creator_id_fkey ( id, username, display_name, avatar_url )
+        creator:profiles!markets_creator_id_fkey ( id, username, display_name, avatar_url ),
+        positions(count),
+        comments(count)
       `)
       .order('created_at', { ascending: false })
       .limit(50);
 
     if (!data) { setLoading(false); return; }
 
-    const ids = data.map(m => m.id);
+    const ids = data.map((m: any) => m.id);
     const { data: myPos } = await supabase
       .from('positions')
       .select('*')
@@ -39,9 +41,14 @@ export default function FeedScreen() {
       .eq('user_id', user.id);
 
     const posMap: Record<string, any> = {};
-    (myPos ?? []).forEach(p => { posMap[p.market_id] = p; });
+    (myPos ?? []).forEach((p: any) => { posMap[p.market_id] = p; });
 
-    setMarkets(data.map(m => ({ ...m, my_position: posMap[m.id] ?? null })));
+    setMarkets(data.map((m: any) => ({
+      ...m,
+      my_position:    posMap[m.id] ?? null,
+      position_count: m.positions?.[0]?.count ?? 0,
+      comment_count:  m.comments?.[0]?.count ?? 0,
+    })));
     setLoading(false);
   }, [user]);
 

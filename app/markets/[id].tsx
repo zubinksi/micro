@@ -127,21 +127,11 @@ export default function MarketDetailScreen() {
 
       <ScrollView contentContainerStyle={styles.inner}>
 
-        {/* Status + resolver type row */}
-        <View style={styles.topMeta}>
-          <View style={[styles.statusTag, { borderColor: statusColor }]}>
-            <Text style={[styles.statusTagText, { color: statusColor }]}>
-              {market.status.toUpperCase()}
-            </Text>
-          </View>
-          <View style={styles.resolverBadge}>
-            <Text style={styles.resolverEmoji}>
-              {market.resolver_type === 'ai' ? '🤖' : '👤'}
-            </Text>
-            <Text style={styles.resolverBadgeText}>
-              {market.resolver_type === 'ai' ? 'AI Judge' : 'Creator decides'}
-            </Text>
-          </View>
+        {/* Status tag */}
+        <View style={[styles.statusTag, { borderColor: statusColor }]}>
+          <Text style={[styles.statusTagText, { color: statusColor }]}>
+            {market.status.toUpperCase()}
+          </Text>
         </View>
 
         {/* Question — serif */}
@@ -258,9 +248,16 @@ export default function MarketDetailScreen() {
 
         {/* Meta */}
         <View style={styles.meta}>
-          <Text style={styles.metaItem}>Closes {new Date(market.closes_at).toLocaleDateString()}</Text>
+          {isResolving && resolution
+            ? <Text style={styles.metaItem}>Resolves {getResolveTime(resolution.created_at)}</Text>
+            : <Text style={styles.metaItem}>Closes {new Date(market.closes_at).toLocaleDateString()}</Text>
+          }
           <Text style={styles.metaDot}>·</Text>
           <Text style={styles.metaItem}>by @{market.creator?.username}</Text>
+          <Text style={styles.metaDot}>·</Text>
+          <Text style={styles.metaItem}>
+            {market.resolver_type === 'ai' ? '🤖 AI Judge' : '👤 Creator decides'}
+          </Text>
         </View>
 
         {/* Comments */}
@@ -319,6 +316,16 @@ export default function MarketDetailScreen() {
   );
 }
 
+function getResolveTime(resolutionCreatedAt: string): string {
+  const deadline = new Date(resolutionCreatedAt).getTime() + 48 * 3600_000;
+  const diff     = deadline - Date.now();
+  if (diff <= 0) return 'shortly';
+  const hours = Math.floor(diff / 3600_000);
+  const mins  = Math.floor((diff % 3600_000) / 60_000);
+  if (hours > 0) return `in ${hours}h ${mins}m`;
+  return `in ${mins}m`;
+}
+
 const STATUS_COLOR: Record<string, string> = {
   open:      COLORS.yes,
   locked:    COLORS.warning,
@@ -334,12 +341,8 @@ const styles = StyleSheet.create({
   headerActions:  { flexDirection: 'row', alignItems: 'center', gap: 4 },
   headerBtn:      { padding: 6 },
 
-  topMeta:        { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14, flexWrap: 'wrap' },
-  statusTag:      { borderWidth: 1, borderRadius: 2, paddingHorizontal: 8, paddingVertical: 3 },
+  statusTag:      { alignSelf: 'flex-start', borderWidth: 1, borderRadius: 2, paddingHorizontal: 8, paddingVertical: 3, marginBottom: 14 },
   statusTagText:  { fontSize: 10, fontFamily: FONTS.sansBold, letterSpacing: 1.2, textTransform: 'uppercase' },
-  resolverBadge:  { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: COLORS.surfaceAlt, borderRadius: 2, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1, borderColor: COLORS.border },
-  resolverEmoji:  { fontSize: 13 },
-  resolverBadgeText: { fontFamily: FONTS.sansMedium, fontSize: 11, color: COLORS.textMuted },
 
   question:       { fontFamily: FONTS.serif, fontSize: 24, color: COLORS.text, lineHeight: 32, marginBottom: 10 },
   criteria:       { fontFamily: FONTS.sans, fontSize: 13, color: COLORS.textMuted, lineHeight: 19, marginBottom: 20 },
