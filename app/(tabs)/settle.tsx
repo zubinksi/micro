@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { useAuth } from '@/hooks/useAuth';
 import { useSettlements } from '@/hooks/usePositions';
-import { COLORS } from '@/lib/constants';
+import { COLORS, FONTS } from '@/lib/constants';
 import { venmoDeeplink, cashAppDeeplink, settlementNote, formatAmount } from '@/utils/settlement';
 import type { Settlement } from '@/lib/types';
 
@@ -24,8 +24,8 @@ export default function SettleScreen() {
 
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
 
-  const iOwe    = debts.filter(d => d.from_user_id === user?.id);
-  const owedMe  = debts.filter(d => d.to_user_id === user?.id);
+  const iOwe   = debts.filter(d => d.from_user_id === user?.id);
+  const owedMe = debts.filter(d => d.to_user_id === user?.id);
 
   const handleSettle = async (debt: Settlement) => {
     await markSettled(debt.id);
@@ -40,7 +40,7 @@ export default function SettleScreen() {
       <View key={debt.id} style={styles.card}>
         <View style={styles.cardTop}>
           <Text style={styles.counterparty}>
-            {direction === 'owe' ? '↑ You owe ' : '↓ '}
+            {direction === 'owe' ? 'You owe ' : ''}
             <Text style={styles.name}>{counterparty?.display_name ?? counterparty?.username}</Text>
             {direction === 'owed' ? ' owes you' : ''}
           </Text>
@@ -64,7 +64,7 @@ export default function SettleScreen() {
               style={styles.payBtn}
               onPress={() => Linking.openURL(cashAppDeeplink(counterparty.username!, debt.amount, note))}
             >
-              <Text style={styles.payBtnText}>Pay via Cash App</Text>
+              <Text style={styles.payBtnText}>Cash App</Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity style={styles.settledBtn} onPress={() => handleSettle(debt)}>
@@ -85,7 +85,6 @@ export default function SettleScreen() {
           <View>
             {iOwe.length === 0 && owedMe.length === 0 && (
               <View style={styles.empty}>
-                <Text style={styles.emptyIcon}>✅</Text>
                 <Text style={styles.emptyTitle}>All settled up</Text>
                 <Text style={styles.emptySub}>No outstanding debts.</Text>
               </View>
@@ -112,24 +111,23 @@ export default function SettleScreen() {
 }
 
 const styles = StyleSheet.create({
-  container:     { flex: 1, backgroundColor: COLORS.bg },
-  section:       { marginBottom: 24, paddingHorizontal: 16 },
-  sectionTitle:  { fontSize: 13, fontWeight: '700', color: COLORS.textMuted, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 10, marginTop: 20 },
-  card:          { backgroundColor: COLORS.surface, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: COLORS.border, marginBottom: 10 },
-  cardTop:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  counterparty:  { color: COLORS.textMuted, fontSize: 13 },
-  name:          { color: COLORS.text, fontWeight: '700' },
-  amount:        { fontSize: 20, fontWeight: '800' },
-  amountOwe:     { color: COLORS.no },
-  amountOwed:    { color: COLORS.yes },
-  marketQ:       { color: COLORS.textMuted, fontSize: 12, marginBottom: 14 },
-  cardActions:   { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  payBtn:        { backgroundColor: COLORS.primaryDim, borderRadius: 8, paddingVertical: 8, paddingHorizontal: 14 },
-  payBtnText:    { color: '#fff', fontWeight: '600', fontSize: 13 },
-  settledBtn:    { borderRadius: 8, borderWidth: 1, borderColor: COLORS.border, paddingVertical: 8, paddingHorizontal: 14 },
-  settledBtnText: { color: COLORS.textMuted, fontSize: 13 },
-  empty:         { alignItems: 'center', paddingTop: 80 },
-  emptyIcon:     { fontSize: 40, marginBottom: 12 },
-  emptyTitle:    { fontSize: 18, fontWeight: '700', color: COLORS.text, marginBottom: 6 },
-  emptySub:      { color: COLORS.textMuted, fontSize: 14 },
+  container:      { flex: 1, backgroundColor: COLORS.bg },
+  section:        { marginBottom: 24, paddingHorizontal: 16 },
+  sectionTitle:   { fontFamily: FONTS.sansBold, fontSize: 11, color: COLORS.textMuted, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 10, marginTop: 20 },
+  card:           { backgroundColor: COLORS.surface, borderRadius: 4, padding: 16, borderWidth: 1, borderColor: COLORS.border, marginBottom: 8 },
+  cardTop:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+  counterparty:   { fontFamily: FONTS.sans, color: COLORS.textMuted, fontSize: 13 },
+  name:           { fontFamily: FONTS.sansBold, color: COLORS.text },
+  amount:         { fontFamily: FONTS.sansBold, fontSize: 20 },
+  amountOwe:      { color: COLORS.no },
+  amountOwed:     { color: COLORS.yes },
+  marketQ:        { fontFamily: FONTS.sans, color: COLORS.textMuted, fontSize: 12, marginBottom: 14 },
+  cardActions:    { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  payBtn:         { backgroundColor: COLORS.primary, borderRadius: 4, paddingVertical: 8, paddingHorizontal: 14 },
+  payBtnText:     { fontFamily: FONTS.sansMedium, color: '#fff', fontSize: 13 },
+  settledBtn:     { borderRadius: 4, borderWidth: 1, borderColor: COLORS.border, paddingVertical: 8, paddingHorizontal: 14 },
+  settledBtnText: { fontFamily: FONTS.sans, color: COLORS.textMuted, fontSize: 13 },
+  empty:          { alignItems: 'center', paddingTop: 80 },
+  emptyTitle:     { fontFamily: FONTS.serif, fontSize: 22, color: COLORS.text, marginBottom: 8 },
+  emptySub:       { fontFamily: FONTS.sans, color: COLORS.textMuted, fontSize: 14 },
 });

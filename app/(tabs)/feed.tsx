@@ -7,7 +7,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
-import { COLORS } from '@/lib/constants';
+import { COLORS, FONTS } from '@/lib/constants';
 import type { Market } from '@/lib/types';
 import { MarketCard } from '@/components/MarketCard';
 
@@ -73,6 +73,7 @@ export default function FeedScreen() {
           />
         )}
         contentContainerStyle={styles.list}
+        ListHeaderComponent={<FeedHeader />}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -82,11 +83,10 @@ export default function FeedScreen() {
         }
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={styles.emptyIcon}>🎯</Text>
             <Text style={styles.emptyTitle}>No markets yet</Text>
             <Text style={styles.emptySub}>Create a market or join one with an invite code.</Text>
             <TouchableOpacity style={styles.joinLink} onPress={() => router.push('/markets/join')}>
-              <Text style={styles.joinLinkText}>Join with invite code</Text>
+              <Text style={styles.joinLinkText}>Join with invite code →</Text>
             </TouchableOpacity>
           </View>
         }
@@ -94,6 +94,14 @@ export default function FeedScreen() {
 
       {/* Bottom action bar */}
       <View style={styles.bottomBar}>
+        <TouchableOpacity
+          style={styles.joinBtn}
+          onPress={() => router.push('/markets/join')}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="enter-outline" size={18} color={COLORS.primary} />
+          <Text style={styles.joinBtnText}>Join</Text>
+        </TouchableOpacity>
         <TouchableOpacity
           style={styles.newMarketBtn}
           onPress={() => router.push('/markets/create')}
@@ -106,17 +114,30 @@ export default function FeedScreen() {
   );
 }
 
+function FeedHeader() {
+  return (
+    <View style={styles.header}>
+      <Text style={styles.logo}>Micro</Text>
+      <Text style={styles.tagline}>Group prediction markets</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container:     { flex: 1, backgroundColor: COLORS.bg },
-  center:        { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  list:          { paddingTop: 12, paddingBottom: 16 },
-  empty:         { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 80, paddingHorizontal: 32 },
-  emptyIcon:     { fontSize: 40, marginBottom: 12 },
-  emptyTitle:    { fontSize: 18, fontWeight: '700', color: COLORS.text, marginBottom: 6 },
-  emptySub:      { fontSize: 14, color: COLORS.textMuted, textAlign: 'center', marginBottom: 20 },
+  center:        { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.bg },
+  header:        { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 16 },
+  logo:          { fontFamily: FONTS.serif, fontSize: 32, color: COLORS.text, letterSpacing: -0.5 },
+  tagline:       { fontFamily: FONTS.sans, fontSize: 13, color: COLORS.textMuted, marginTop: 2 },
+  list:          { paddingBottom: 16 },
+  empty:         { alignItems: 'center', paddingTop: 80, paddingHorizontal: 32 },
+  emptyTitle:    { fontFamily: FONTS.serif, fontSize: 22, color: COLORS.text, marginBottom: 8, textAlign: 'center' },
+  emptySub:      { fontFamily: FONTS.sans, fontSize: 14, color: COLORS.textMuted, textAlign: 'center', marginBottom: 20, lineHeight: 20 },
   joinLink:      { paddingVertical: 8 },
-  joinLinkText:  { color: COLORS.primary, fontWeight: '600', fontSize: 14 },
-  bottomBar:     { paddingHorizontal: 16, paddingVertical: 12, paddingBottom: 20, backgroundColor: COLORS.surface, borderTopWidth: 1, borderTopColor: COLORS.border },
-  newMarketBtn:  { backgroundColor: COLORS.primary, borderRadius: 14, paddingVertical: 16, alignItems: 'center' },
-  newMarketText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  joinLinkText:  { fontFamily: FONTS.sansMedium, color: COLORS.primary, fontSize: 14 },
+  bottomBar:     { flexDirection: 'row', gap: 10, paddingHorizontal: 16, paddingVertical: 12, paddingBottom: 20, backgroundColor: COLORS.surface, borderTopWidth: 1, borderTopColor: COLORS.border },
+  joinBtn:       { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: COLORS.primary, borderRadius: 4, paddingVertical: 14, paddingHorizontal: 18 },
+  joinBtnText:   { fontFamily: FONTS.sansBold, color: COLORS.primary, fontSize: 15 },
+  newMarketBtn:  { flex: 1, backgroundColor: COLORS.primary, borderRadius: 4, paddingVertical: 14, alignItems: 'center' },
+  newMarketText: { fontFamily: FONTS.sansBold, color: '#fff', fontSize: 15 },
 });

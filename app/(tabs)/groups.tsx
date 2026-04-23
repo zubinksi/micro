@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
   },
   cardAvatar: {
     width: 44, height: 44, borderRadius: 22,
-    backgroundColor: COLORS.primaryDim, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center',
   },
   avatarText: { color: '#fff', fontWeight: '700', fontSize: 18 },
   cardBody:   { flex: 1 },

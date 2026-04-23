@@ -12,7 +12,7 @@ import { useLeaderboard } from '@/hooks/usePositions';
 import { COLORS } from '@/lib/constants';
 import { MarketCard } from '@/components/MarketCard';
 import { LeaderboardEntry } from '@/components/LeaderboardEntry';
-import { shareGroupInvite } from '@/utils/share';
+// shareGroupInvite removed — groups are no longer the sharing unit
 import type { UserGroupStats } from '@/lib/types';
 
 type Tab = 'markets' | 'leaderboard' | 'members';
@@ -67,7 +67,7 @@ export default function GroupDetailScreen() {
           title: group.name,
           headerRight: () => (
             <View style={styles.headerRight}>
-              <TouchableOpacity onPress={() => shareGroupInvite(group.name, group.invite_code)}>
+              <TouchableOpacity>
                 <Ionicons name="share-outline" size={22} color={COLORS.text} />
               </TouchableOpacity>
               {!isAdmin && (
@@ -84,7 +84,7 @@ export default function GroupDetailScreen() {
       <View style={styles.codeBanner}>
         <Text style={styles.codeLabel}>Invite code</Text>
         <Text style={styles.code}>{group.invite_code}</Text>
-        <TouchableOpacity onPress={() => shareGroupInvite(group.name, group.invite_code)}>
+        <TouchableOpacity>
           <Ionicons name="copy-outline" size={16} color={COLORS.primary} />
         </TouchableOpacity>
       </View>
@@ -180,10 +180,10 @@ const styles = StyleSheet.create({
   createBtn:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, margin: 16, backgroundColor: COLORS.primary, borderRadius: 12, paddingVertical: 14 },
   createBtnText:    { color: '#fff', fontWeight: '700', fontSize: 15 },
   memberRow:        { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border },
-  memberAvatar:     { width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.primaryDim, alignItems: 'center', justifyContent: 'center' },
+  memberAvatar:     { width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center' },
   memberAvatarText: { color: '#fff', fontWeight: '700', fontSize: 16 },
   memberName:       { color: COLORS.text, fontWeight: '600', fontSize: 15 },
   memberHandle:     { color: COLORS.textMuted, fontSize: 12 },
-  adminBadge:       { marginLeft: 'auto', backgroundColor: COLORS.primaryDim, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 },
+  adminBadge:       { marginLeft: 'auto', backgroundColor: COLORS.primary, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 },
   adminText:        { color: '#fff', fontSize: 11, fontWeight: '700' },
 });

@@ -3,7 +3,7 @@ import {
   View, Text, Modal, TouchableOpacity, TextInput,
   StyleSheet, ActivityIndicator,
 } from 'react-native';
-import { COLORS, STAKE_MIN, STAKE_MAX } from '@/lib/constants';
+import { COLORS, FONTS, STAKE_MIN, STAKE_MAX } from '@/lib/constants';
 import { getPoolOdds, getPayoutPreview } from '@/utils/pool';
 import { ProbabilityBar } from './ProbabilityBar';
 import type { Market, Outcome } from '@/lib/types';
@@ -47,7 +47,6 @@ export function StakeModal({ market, onConfirm, onClose }: Props) {
         <Text style={styles.title}>Take a position</Text>
         <Text style={styles.question} numberOfLines={2}>{market.question}</Text>
 
-        {/* Current odds */}
         <ProbabilityBar odds={odds} />
         <View style={{ height: 20 }} />
 
@@ -88,9 +87,10 @@ export function StakeModal({ market, onConfirm, onClose }: Props) {
         {/* Payout preview */}
         {preview && (
           <View style={styles.preview}>
-            <Text style={styles.previewLabel}>If {outcome} wins:</Text>
+            <Text style={styles.previewLabel}>If {outcome} wins</Text>
             <Text style={styles.previewPayout}>
-              ${preview.potentialPayout.toFixed(2)} ({preview.roi >= 0 ? '+' : ''}{(preview.roi * 100).toFixed(0)}% ROI)
+              ${preview.potentialPayout.toFixed(2)}
+              <Text style={styles.previewRoi}> ({preview.roi >= 0 ? '+' : ''}{(preview.roi * 100).toFixed(0)}% ROI)</Text>
             </Text>
             <Text style={styles.previewOdds}>Implied probability: {Math.round(preview.impliedOdds * 100)}%</Text>
           </View>
@@ -120,31 +120,32 @@ export function StakeModal({ market, onConfirm, onClose }: Props) {
 }
 
 const styles = StyleSheet.create({
-  backdrop:          { flex: 1, backgroundColor: '#000000aa' },
-  sheet:             { backgroundColor: COLORS.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24, paddingBottom: 40 },
-  handle:            { width: 40, height: 4, borderRadius: 2, backgroundColor: COLORS.border, alignSelf: 'center', marginBottom: 20 },
-  title:             { fontSize: 18, fontWeight: '800', color: COLORS.text, marginBottom: 6 },
-  question:          { fontSize: 14, color: COLORS.textMuted, marginBottom: 20, lineHeight: 20 },
+  backdrop:          { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' },
+  sheet:             { backgroundColor: COLORS.surface, borderTopLeftRadius: 12, borderTopRightRadius: 12, padding: 24, paddingBottom: 40 },
+  handle:            { width: 36, height: 3, borderRadius: 2, backgroundColor: COLORS.border, alignSelf: 'center', marginBottom: 20 },
+  title:             { fontFamily: FONTS.serif, fontSize: 22, color: COLORS.text, marginBottom: 6 },
+  question:          { fontFamily: FONTS.sans, fontSize: 14, color: COLORS.textMuted, marginBottom: 20, lineHeight: 20 },
   outcomePicker:     { flexDirection: 'row', gap: 10, marginBottom: 20 },
-  outcomeBtn:        { flex: 1, borderRadius: 10, paddingVertical: 12, alignItems: 'center', borderWidth: 2, borderColor: COLORS.border },
-  outcomeBtnYes:     { borderColor: COLORS.yes, backgroundColor: COLORS.yes + '22' },
-  outcomeBtnNo:      { borderColor: COLORS.no, backgroundColor: COLORS.no + '22' },
-  outcomeBtnText:    { fontSize: 16, fontWeight: '800', color: COLORS.textMuted },
+  outcomeBtn:        { flex: 1, borderRadius: 4, paddingVertical: 12, alignItems: 'center', borderWidth: 1, borderColor: COLORS.border },
+  outcomeBtnYes:     { borderColor: COLORS.yes, backgroundColor: COLORS.yesLight },
+  outcomeBtnNo:      { borderColor: COLORS.no,  backgroundColor: COLORS.noLight },
+  outcomeBtnText:    { fontFamily: FONTS.sansBold, fontSize: 15, color: COLORS.textMuted },
   outcomeBtnTextYes: { color: COLORS.yes },
   outcomeBtnTextNo:  { color: COLORS.no },
-  label:             { color: COLORS.textMuted, fontSize: 13, fontWeight: '600', marginBottom: 10 },
+  label:             { fontFamily: FONTS.sansMedium, color: COLORS.textMuted, fontSize: 12, marginBottom: 10 },
   amountRow:         { flexDirection: 'row', gap: 8, marginBottom: 10 },
-  quickAmt:          { flex: 1, backgroundColor: COLORS.surfaceAlt, borderRadius: 8, paddingVertical: 8, alignItems: 'center', borderWidth: 1, borderColor: COLORS.border },
-  quickAmtText:      { color: COLORS.text, fontWeight: '600', fontSize: 13 },
-  amountInput:       { backgroundColor: COLORS.surfaceAlt, borderRadius: 10, borderWidth: 1, borderColor: COLORS.border, padding: 12, color: COLORS.text, fontSize: 16, marginBottom: 14 },
-  preview:           { backgroundColor: COLORS.bg, borderRadius: 10, padding: 14, marginBottom: 16 },
-  previewLabel:      { fontSize: 12, color: COLORS.textMuted, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
-  previewPayout:     { fontSize: 20, fontWeight: '800', color: COLORS.yes, marginTop: 4 },
-  previewOdds:       { fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
-  error:             { color: COLORS.no, fontSize: 13, marginBottom: 10 },
-  confirmBtn:        { backgroundColor: COLORS.primary, borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginBottom: 10 },
+  quickAmt:          { flex: 1, backgroundColor: COLORS.surfaceAlt, borderRadius: 4, paddingVertical: 8, alignItems: 'center', borderWidth: 1, borderColor: COLORS.border },
+  quickAmtText:      { fontFamily: FONTS.sansMedium, color: COLORS.text, fontSize: 13 },
+  amountInput:       { backgroundColor: COLORS.surfaceAlt, borderRadius: 4, borderWidth: 1, borderColor: COLORS.border, padding: 12, fontFamily: FONTS.sans, color: COLORS.text, fontSize: 16, marginBottom: 14 },
+  preview:           { backgroundColor: COLORS.primaryLight, borderRadius: 4, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: COLORS.primary + '33' },
+  previewLabel:      { fontFamily: FONTS.sansMedium, fontSize: 11, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: 0.6 },
+  previewPayout:     { fontFamily: FONTS.sansBold, fontSize: 22, color: COLORS.primary, marginTop: 4 },
+  previewRoi:        { fontFamily: FONTS.sans, fontSize: 14, color: COLORS.textMuted },
+  previewOdds:       { fontFamily: FONTS.sans, fontSize: 12, color: COLORS.textMuted, marginTop: 2 },
+  error:             { fontFamily: FONTS.sans, color: COLORS.no, fontSize: 13, marginBottom: 10 },
+  confirmBtn:        { backgroundColor: COLORS.primary, borderRadius: 4, paddingVertical: 16, alignItems: 'center', marginBottom: 10 },
   confirmBtnDisabled:{ opacity: 0.5 },
-  confirmBtnText:    { color: '#fff', fontWeight: '700', fontSize: 16 },
+  confirmBtnText:    { fontFamily: FONTS.sansBold, color: '#fff', fontSize: 16 },
   cancelBtn:         { paddingVertical: 10, alignItems: 'center' },
-  cancelBtnText:     { color: COLORS.textMuted, fontSize: 14 },
+  cancelBtnText:     { fontFamily: FONTS.sans, color: COLORS.textMuted, fontSize: 14 },
 });

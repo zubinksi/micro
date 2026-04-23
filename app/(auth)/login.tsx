@@ -4,15 +4,15 @@ import {
   StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
 import { useAuth } from '@/hooks/useAuth';
-import { COLORS } from '@/lib/constants';
+import { COLORS, FONTS } from '@/lib/constants';
 
 type Step = 'email' | 'sent';
 
 export default function LoginScreen() {
   const { sendMagicLink } = useAuth();
-  const [step, setStep]     = useState<Step>('email');
-  const [email, setEmail]   = useState('');
-  const [error, setError]   = useState('');
+  const [step,    setStep]    = useState<Step>('email');
+  const [email,   setEmail]   = useState('');
+  const [error,   setError]   = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSend = async () => {
@@ -30,7 +30,7 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.inner}>
-        <Text style={styles.wordmark}>micro</Text>
+        <Text style={styles.wordmark}>Micro</Text>
         <Text style={styles.tagline}>Prediction markets for your group chat.</Text>
 
         {step === 'email' ? (
@@ -61,7 +61,6 @@ export default function LoginScreen() {
           </>
         ) : (
           <View style={styles.sentWrap}>
-            <Text style={styles.sentIcon}>📬</Text>
             <Text style={styles.sentTitle}>Check your email</Text>
             <Text style={styles.sentSub}>
               We sent a sign-in link to{'\n'}<Text style={styles.sentEmail}>{email}</Text>
@@ -79,28 +78,18 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container:  { flex: 1, backgroundColor: COLORS.bg },
   inner:      { flex: 1, justifyContent: 'center', paddingHorizontal: 28 },
-  wordmark:   { fontSize: 42, fontWeight: '800', color: COLORS.primary, marginBottom: 6, letterSpacing: -1 },
-  tagline:    { fontSize: 16, color: COLORS.textMuted, marginBottom: 48 },
-  label:      { fontSize: 14, color: COLORS.textMuted, marginBottom: 8 },
-  input: {
-    backgroundColor: COLORS.surface,
-    borderColor: COLORS.border,
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    color: COLORS.text,
-    marginBottom: 16,
-  },
-  btn:         { backgroundColor: COLORS.primary, borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginBottom: 12 },
-  btnDisabled: { opacity: 0.5 },
-  btnText:     { color: '#fff', fontWeight: '700', fontSize: 16 },
-  error:       { color: COLORS.no, marginTop: 4, textAlign: 'center', fontSize: 14 },
-  sentWrap:    { alignItems: 'center' },
-  sentIcon:    { fontSize: 48, marginBottom: 16 },
-  sentTitle:   { fontSize: 22, fontWeight: '800', color: COLORS.text, marginBottom: 10 },
-  sentSub:     { fontSize: 15, color: COLORS.textMuted, textAlign: 'center', lineHeight: 22, marginBottom: 32 },
-  sentEmail:   { color: COLORS.text, fontWeight: '600' },
-  back:        { paddingVertical: 8 },
-  backText:    { color: COLORS.textMuted, fontSize: 14 },
+  wordmark:   { fontFamily: FONTS.serif, fontSize: 48, color: COLORS.primary, marginBottom: 8 },
+  tagline:    { fontFamily: FONTS.sans, fontSize: 16, color: COLORS.textMuted, marginBottom: 48, lineHeight: 22 },
+  label:      { fontFamily: FONTS.sansMedium, fontSize: 12, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 8 },
+  input:      { backgroundColor: COLORS.surface, borderColor: COLORS.border, borderWidth: 1, borderRadius: 4, padding: 16, fontFamily: FONTS.sans, fontSize: 16, color: COLORS.text, marginBottom: 16 },
+  btn:        { backgroundColor: COLORS.primary, borderRadius: 4, paddingVertical: 16, alignItems: 'center', marginBottom: 12 },
+  btnDisabled:{ opacity: 0.5 },
+  btnText:    { fontFamily: FONTS.sansBold, color: '#fff', fontSize: 16 },
+  error:      { fontFamily: FONTS.sans, color: COLORS.no, marginTop: 4, textAlign: 'center', fontSize: 14 },
+  sentWrap:   { alignItems: 'center' },
+  sentTitle:  { fontFamily: FONTS.serif, fontSize: 28, color: COLORS.text, marginBottom: 12 },
+  sentSub:    { fontFamily: FONTS.sans, fontSize: 15, color: COLORS.textMuted, textAlign: 'center', lineHeight: 22, marginBottom: 32 },
+  sentEmail:  { fontFamily: FONTS.sansBold, color: COLORS.text },
+  back:       { paddingVertical: 8 },
+  backText:   { fontFamily: FONTS.sans, color: COLORS.textMuted, fontSize: 14 },
 });

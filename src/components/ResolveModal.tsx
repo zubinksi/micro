@@ -3,7 +3,7 @@ import {
   View, Text, Modal, TouchableOpacity, TextInput,
   StyleSheet, ActivityIndicator,
 } from 'react-native';
-import { COLORS } from '@/lib/constants';
+import { COLORS, FONTS } from '@/lib/constants';
 import type { Market, Outcome } from '@/lib/types';
 
 interface Props {
@@ -40,7 +40,7 @@ export function ResolveModal({ market, onConfirm, onClose }: Props) {
 
         <Text style={styles.criteria}>{market.resolution_criteria}</Text>
 
-        <Text style={styles.label}>Outcome *</Text>
+        <Text style={styles.label}>Outcome</Text>
         <View style={styles.outcomePicker}>
           <TouchableOpacity
             style={[styles.outcomeBtn, outcome === 'YES' && styles.outcomeBtnYes]}
@@ -61,7 +61,7 @@ export function ResolveModal({ market, onConfirm, onClose }: Props) {
           style={styles.input}
           value={evidenceUrl}
           onChangeText={setEvidenceUrl}
-          placeholder="https://espn.com/..."
+          placeholder="https://..."
           placeholderTextColor={COLORS.textDim}
           keyboardType="url"
           autoCapitalize="none"
@@ -77,7 +77,7 @@ export function ResolveModal({ market, onConfirm, onClose }: Props) {
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
         <TouchableOpacity
-          style={[styles.confirmBtn, loading && styles.confirmBtnDisabled]}
+          style={[styles.confirmBtn, loading && styles.btnDisabled]}
           onPress={handleConfirm}
           disabled={loading}
         >
@@ -96,27 +96,27 @@ export function ResolveModal({ market, onConfirm, onClose }: Props) {
 }
 
 const styles = StyleSheet.create({
-  backdrop:          { flex: 1, backgroundColor: '#000000aa' },
-  sheet:             { backgroundColor: COLORS.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24, paddingBottom: 40 },
-  handle:            { width: 40, height: 4, borderRadius: 2, backgroundColor: COLORS.border, alignSelf: 'center', marginBottom: 20 },
-  title:             { fontSize: 18, fontWeight: '800', color: COLORS.text, marginBottom: 6 },
-  question:          { fontSize: 14, color: COLORS.text, fontWeight: '600', marginBottom: 8, lineHeight: 20 },
-  criteria:          { fontSize: 13, color: COLORS.textMuted, marginBottom: 20, lineHeight: 18, fontStyle: 'italic' },
-  label:             { color: COLORS.textMuted, fontSize: 13, fontWeight: '600', marginBottom: 10 },
+  backdrop:          { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' },
+  sheet:             { backgroundColor: COLORS.surface, borderTopLeftRadius: 12, borderTopRightRadius: 12, padding: 24, paddingBottom: 40 },
+  handle:            { width: 36, height: 3, borderRadius: 2, backgroundColor: COLORS.border, alignSelf: 'center', marginBottom: 20 },
+  title:             { fontFamily: FONTS.serif, fontSize: 22, color: COLORS.text, marginBottom: 6 },
+  question:          { fontFamily: FONTS.sans, fontSize: 14, color: COLORS.text, fontWeight: '600', marginBottom: 8, lineHeight: 20 },
+  criteria:          { fontFamily: FONTS.sans, fontSize: 13, color: COLORS.textMuted, marginBottom: 20, lineHeight: 18, fontStyle: 'italic' },
+  label:             { fontFamily: FONTS.sansMedium, color: COLORS.textMuted, fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 10 },
   outcomePicker:     { flexDirection: 'row', gap: 10, marginBottom: 20 },
-  outcomeBtn:        { flex: 1, borderRadius: 10, paddingVertical: 12, alignItems: 'center', borderWidth: 2, borderColor: COLORS.border },
-  outcomeBtnYes:     { borderColor: COLORS.yes, backgroundColor: COLORS.yes + '22' },
-  outcomeBtnNo:      { borderColor: COLORS.no, backgroundColor: COLORS.no + '22' },
-  outcomeBtnText:    { fontSize: 16, fontWeight: '800', color: COLORS.textMuted },
+  outcomeBtn:        { flex: 1, borderRadius: 4, paddingVertical: 12, alignItems: 'center', borderWidth: 1, borderColor: COLORS.border },
+  outcomeBtnYes:     { borderColor: COLORS.yes, backgroundColor: COLORS.yesLight },
+  outcomeBtnNo:      { borderColor: COLORS.no,  backgroundColor: COLORS.noLight },
+  outcomeBtnText:    { fontFamily: FONTS.sansBold, fontSize: 15, color: COLORS.textMuted },
   outcomeBtnTextYes: { color: COLORS.yes },
   outcomeBtnTextNo:  { color: COLORS.no },
-  input:             { backgroundColor: COLORS.surfaceAlt, borderRadius: 10, borderWidth: 1, borderColor: COLORS.border, padding: 12, color: COLORS.text, fontSize: 14, marginBottom: 16 },
-  warningBox:        { backgroundColor: COLORS.warning + '22', borderRadius: 10, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: COLORS.warning + '44' },
-  warningText:       { color: COLORS.warning, fontSize: 12, lineHeight: 18 },
-  error:             { color: COLORS.no, fontSize: 13, marginBottom: 10 },
-  confirmBtn:        { backgroundColor: COLORS.primary, borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginBottom: 10 },
-  confirmBtnDisabled:{ opacity: 0.5 },
-  confirmBtnText:    { color: '#fff', fontWeight: '700', fontSize: 16 },
+  input:             { backgroundColor: COLORS.surfaceAlt, borderRadius: 4, borderWidth: 1, borderColor: COLORS.border, padding: 12, fontFamily: FONTS.sans, color: COLORS.text, fontSize: 14, marginBottom: 16 },
+  warningBox:        { backgroundColor: COLORS.warning + '18', borderRadius: 4, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: COLORS.warning + '44' },
+  warningText:       { fontFamily: FONTS.sans, color: COLORS.warning, fontSize: 12, lineHeight: 18 },
+  error:             { fontFamily: FONTS.sans, color: COLORS.no, fontSize: 13, marginBottom: 10 },
+  confirmBtn:        { backgroundColor: COLORS.primary, borderRadius: 4, paddingVertical: 16, alignItems: 'center', marginBottom: 10 },
+  btnDisabled:       { opacity: 0.5 },
+  confirmBtnText:    { fontFamily: FONTS.sansBold, color: '#fff', fontSize: 16 },
   cancelBtn:         { paddingVertical: 10, alignItems: 'center' },
-  cancelBtnText:     { color: COLORS.textMuted, fontSize: 14 },
+  cancelBtnText:     { fontFamily: FONTS.sans, color: COLORS.textMuted, fontSize: 14 },
 });

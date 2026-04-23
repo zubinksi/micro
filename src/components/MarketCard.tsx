@@ -1,15 +1,20 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { COLORS } from '@/lib/constants';
+import { COLORS, FONTS } from '@/lib/constants';
 import { getPoolOdds } from '@/utils/pool';
-import { ProbabilityBar } from './ProbabilityBar';
 import type { Market } from '@/lib/types';
 
 interface Props {
   market: Market;
   onPress: () => void;
-  showGroup?: boolean;
-  groupName?: string;
 }
+
+const STATUS_LABEL: Record<string, string> = {
+  open:      'Open',
+  locked:    'Locked',
+  resolving: 'Resolving',
+  settled:   'Settled',
+  voided:    'Voided',
+};
 
 const STATUS_COLOR: Record<string, string> = {
   open:      COLORS.yes,
@@ -23,40 +28,44 @@ export function MarketCard({ market, onPress }: Props) {
   const odds    = getPoolOdds(market);
   const myPos   = market.my_position;
   const timeLeft = getTimeLeft(market.closes_at);
+  const yesPct   = odds.totalPool === 0 ? 50 : Math.round(odds.yesProb * 100);
 
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.75}>
+    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.8}>
 
-      {/* Top row */}
+      {/* Status + time row */}
       <View style={styles.topRow}>
-        <View style={[styles.statusDot, { backgroundColor: STATUS_COLOR[market.status] ?? COLORS.textDim }]} />
-        <Text style={styles.status}>{capitalize(market.status)}</Text>
+        <View style={[styles.statusPill, { borderColor: STATUS_COLOR[market.status] ?? COLORS.textDim }]}>
+          <Text style={[styles.statusText, { color: STATUS_COLOR[market.status] ?? COLORS.textDim }]}>
+            {STATUS_LABEL[market.status] ?? market.status}
+          </Text>
+        </View>
         <Text style={styles.time}>{timeLeft}</Text>
       </View>
 
-      {/* Question */}
-      <Text style={styles.question} numberOfLines={2}>{market.question}</Text>
+      {/* Question — serif */}
+      <Text style={styles.question} numberOfLines={3}>{market.question}</Text>
 
       {/* Probability bar */}
-      <ProbabilityBar odds={odds} height={6} />
+      <View style={styles.barTrack}>
+        <View style={[styles.barYes, { flex: yesPct }]} />
+        <View style={[styles.barNo,  { flex: 100 - yesPct }]} />
+      </View>
 
-      {/* Bottom row */}
+      {/* Odds + pool row */}
       <View style={styles.bottomRow}>
-        <Text style={styles.pool}>
-          ${odds.totalPool.toFixed(0)} pool · {getParticipantCount(market)} participant{getParticipantCount(market) !== 1 ? 's' : ''}
-        </Text>
-        {myPos && (
+        <Text style={styles.yesLabel}>{yesPct}% YES</Text>
+        <Text style={styles.pool}>${odds.totalPool.toFixed(0)} pool</Text>
+        {myPos ? (
           <View style={[styles.myPos, myPos.outcome === 'YES' ? styles.myPosYes : styles.myPosNo]}>
             <Text style={styles.myPosText}>{myPos.outcome} ${myPos.stake}</Text>
           </View>
+        ) : (
+          <Text style={styles.noLabel}>{100 - yesPct}% NO</Text>
         )}
       </View>
     </TouchableOpacity>
   );
-}
-
-function capitalize(s: string) {
-  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 function getTimeLeft(closesAt: string): string {
@@ -69,29 +78,30 @@ function getTimeLeft(closesAt: string): string {
   return 'Closing soon';
 }
 
-function getParticipantCount(market: Market): number {
-  return market.yes_pool > 0 || market.no_pool > 0 ? 1 : 0;
-}
-
 const styles = StyleSheet.create({
   card: {
     backgroundColor: COLORS.surface,
-    borderRadius: 14,
+    borderRadius: 4,
     padding: 16,
     marginHorizontal: 16,
-    marginBottom: 10,
+    marginBottom: 8,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  topRow:    { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
-  statusDot: { width: 7, height: 7, borderRadius: 3.5 },
-  status:    { fontSize: 11, color: COLORS.textMuted, fontWeight: '500', flex: 1 },
-  time:      { fontSize: 11, color: COLORS.textDim },
-  question:  { fontSize: 16, fontWeight: '700', color: COLORS.text, marginBottom: 14, lineHeight: 22 },
-  bottomRow: { flexDirection: 'row', alignItems: 'center', marginTop: 10 },
-  pool:      { flex: 1, fontSize: 12, color: COLORS.textMuted },
-  myPos:     { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
-  myPosYes:  { backgroundColor: COLORS.yes },
-  myPosNo:   { backgroundColor: COLORS.no },
-  myPosText: { fontSize: 12, fontWeight: '700', color: '#fff' },
+  topRow:     { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
+  statusPill: { borderWidth: 1, borderRadius: 2, paddingHorizontal: 6, paddingVertical: 2 },
+  statusText: { fontSize: 10, fontFamily: FONTS.sansMedium, letterSpacing: 0.8, textTransform: 'uppercase' },
+  time:       { marginLeft: 'auto', fontSize: 11, fontFamily: FONTS.sans, color: COLORS.textDim },
+  question:   { fontSize: 17, fontFamily: FONTS.serif, color: COLORS.text, marginBottom: 14, lineHeight: 24 },
+  barTrack:   { flexDirection: 'row', height: 4, borderRadius: 2, overflow: 'hidden', backgroundColor: COLORS.border, marginBottom: 10 },
+  barYes:     { backgroundColor: COLORS.yes },
+  barNo:      { backgroundColor: COLORS.no },
+  bottomRow:  { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  yesLabel:   { fontSize: 12, fontFamily: FONTS.sansMedium, color: COLORS.yes },
+  noLabel:    { marginLeft: 'auto', fontSize: 12, fontFamily: FONTS.sansMedium, color: COLORS.no },
+  pool:       { flex: 1, textAlign: 'center', fontSize: 12, fontFamily: FONTS.sans, color: COLORS.textMuted },
+  myPos:      { marginLeft: 'auto', borderRadius: 2, paddingHorizontal: 8, paddingVertical: 3 },
+  myPosYes:   { backgroundColor: COLORS.yesLight },
+  myPosNo:    { backgroundColor: COLORS.noLight },
+  myPosText:  { fontSize: 11, fontFamily: FONTS.sansBold, color: COLORS.text },
 });

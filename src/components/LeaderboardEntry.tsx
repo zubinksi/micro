@@ -43,7 +43,7 @@ export function LeaderboardEntry({ stats, rank }: Props) {
 const styles = StyleSheet.create({
   row:         { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: COLORS.border },
   rank:        { fontSize: 16, fontWeight: '800', width: 28, textAlign: 'center' },
-  avatar:      { width: 38, height: 38, borderRadius: 19, backgroundColor: COLORS.primaryDim, alignItems: 'center', justifyContent: 'center' },
+  avatar:      { width: 38, height: 38, borderRadius: 19, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center' },
   avatarText:  { color: '#fff', fontWeight: '700', fontSize: 15 },
   info:        { flex: 1 },
   name:        { color: COLORS.text, fontWeight: '600', fontSize: 15 },

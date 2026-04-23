@@ -8,7 +8,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
-import { COLORS, STAKE_MAX, STAKE_MIN } from '@/lib/constants';
+import { COLORS, FONTS } from '@/lib/constants';
 import type { ResolverType } from '@/lib/types';
 
 // ─── Duration presets ────────────────────────────────────────────────────────
@@ -82,7 +82,6 @@ function CalendarPicker({ value, onChange, onClose }: CalendarProps) {
     <Modal transparent visible animationType="fade" onRequestClose={onClose}>
       <TouchableOpacity style={cal.overlay} activeOpacity={1} onPress={onClose}>
         <TouchableOpacity activeOpacity={1} style={cal.card}>
-          {/* Header */}
           <View style={cal.header}>
             <TouchableOpacity onPress={prevMonth} style={cal.navBtn}>
               <Ionicons name="chevron-back" size={20} color={COLORS.text} />
@@ -93,14 +92,12 @@ function CalendarPicker({ value, onChange, onClose }: CalendarProps) {
             </TouchableOpacity>
           </View>
 
-          {/* Day name row */}
           <View style={cal.dayNames}>
             {DAY_NAMES.map(d => (
               <Text key={d} style={cal.dayName}>{d}</Text>
             ))}
           </View>
 
-          {/* Day grid */}
           {rows.map((r, ri) => (
             <View key={ri} style={cal.row}>
               {r.map((day, di) => {
@@ -186,7 +183,7 @@ export default function CreateMarketScreen() {
         resolver_id:         resolverType === 'autocrat' ? user.id : null,
         reference_urls:      cleanUrls.length > 0 ? cleanUrls : null,
       })
-      .select('id')
+      .select('id, invite_code')
       .single();
 
     setLoading(false);
@@ -268,7 +265,11 @@ export default function CreateMarketScreen() {
               </Text>
               <Text style={styles.resolverDesc}>{opt.desc}</Text>
             </View>
-            {resolverType === opt.value && <View style={styles.dot} />}
+            {resolverType === opt.value && (
+              <View style={styles.checkDot}>
+                <Ionicons name="checkmark" size={12} color="#fff" />
+              </View>
+            )}
           </TouchableOpacity>
         ))}
 
@@ -332,53 +333,53 @@ export default function CreateMarketScreen() {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  container:           { flex: 1, backgroundColor: COLORS.bg },
-  inner:               { padding: 20, paddingBottom: 48 },
-  label:               { color: COLORS.textMuted, fontSize: 13, fontWeight: '600', marginBottom: 8, marginTop: 20 },
-  input:               { backgroundColor: COLORS.surface, borderColor: COLORS.border, borderWidth: 1, borderRadius: 12, padding: 14, fontSize: 15, color: COLORS.text },
-  multiline:           { minHeight: 80, textAlignVertical: 'top' },
-  durationRow:         { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  durationBtn:         { borderRadius: 20, paddingVertical: 8, paddingHorizontal: 14, borderWidth: 1, borderColor: COLORS.border, backgroundColor: COLORS.surface },
-  durationBtnActive:   { backgroundColor: COLORS.text, borderColor: COLORS.text },
-  durationBtnText:     { fontSize: 13, fontWeight: '600', color: COLORS.textMuted },
+  container:             { flex: 1, backgroundColor: COLORS.bg },
+  inner:                 { padding: 20, paddingBottom: 48 },
+  label:                 { fontFamily: FONTS.sansMedium, color: COLORS.textMuted, fontSize: 12, letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 8, marginTop: 20 },
+  input:                 { backgroundColor: COLORS.surface, borderColor: COLORS.border, borderWidth: 1, borderRadius: 4, padding: 14, fontSize: 15, fontFamily: FONTS.sans, color: COLORS.text },
+  multiline:             { minHeight: 80, textAlignVertical: 'top' },
+  durationRow:           { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  durationBtn:           { borderRadius: 4, paddingVertical: 8, paddingHorizontal: 14, borderWidth: 1, borderColor: COLORS.border, backgroundColor: COLORS.surface },
+  durationBtnActive:     { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  durationBtnText:       { fontFamily: FONTS.sansMedium, fontSize: 13, color: COLORS.textMuted },
   durationBtnTextActive: { color: '#fff' },
-  resolverOption:      { backgroundColor: COLORS.surface, borderRadius: 12, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: COLORS.border, flexDirection: 'row', alignItems: 'center' },
-  resolverSelected:    { borderColor: COLORS.primary },
-  resolverLeft:        { flex: 1 },
-  resolverLabel:       { color: COLORS.text, fontWeight: '600', fontSize: 14 },
-  resolverLabelActive: { color: COLORS.primary },
-  resolverDesc:        { color: COLORS.textMuted, fontSize: 12, marginTop: 2 },
-  dot:                 { width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.primary },
-  refSection:  { marginTop: 16, backgroundColor: COLORS.surfaceAlt, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: COLORS.border },
-  refLabel:    { color: COLORS.text, fontWeight: '600', fontSize: 14, marginBottom: 4 },
-  refHint:     { color: COLORS.textMuted, fontSize: 12, lineHeight: 17, marginBottom: 12 },
-  refRow:      { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
-  refInput:    { flex: 1, backgroundColor: COLORS.surface, borderColor: COLORS.border, borderWidth: 1, borderRadius: 10, padding: 10, fontSize: 13, color: COLORS.text },
-  addRefBtn:   { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
-  addRefText:  { color: COLORS.primary, fontSize: 13, fontWeight: '600' },
-  error:       { color: COLORS.no, marginTop: 12, fontSize: 13 },
-  btn:                 { backgroundColor: COLORS.primary, borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginTop: 28 },
-  btnDisabled:         { opacity: 0.4 },
-  btnText:             { color: '#fff', fontWeight: '700', fontSize: 16 },
+  resolverOption:        { backgroundColor: COLORS.surface, borderRadius: 4, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: COLORS.border, flexDirection: 'row', alignItems: 'center' },
+  resolverSelected:      { borderColor: COLORS.primary },
+  resolverLeft:          { flex: 1 },
+  resolverLabel:         { fontFamily: FONTS.sansMedium, color: COLORS.text, fontSize: 14 },
+  resolverLabelActive:   { color: COLORS.primary },
+  resolverDesc:          { fontFamily: FONTS.sans, color: COLORS.textMuted, fontSize: 12, marginTop: 2 },
+  checkDot:              { width: 20, height: 20, borderRadius: 10, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center' },
+  refSection:            { marginTop: 16, backgroundColor: COLORS.surfaceAlt, borderRadius: 4, padding: 14, borderWidth: 1, borderColor: COLORS.border },
+  refLabel:              { fontFamily: FONTS.sansMedium, color: COLORS.text, fontSize: 14, marginBottom: 4 },
+  refHint:               { fontFamily: FONTS.sans, color: COLORS.textMuted, fontSize: 12, lineHeight: 17, marginBottom: 12 },
+  refRow:                { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+  refInput:              { flex: 1, backgroundColor: COLORS.surface, borderColor: COLORS.border, borderWidth: 1, borderRadius: 4, padding: 10, fontFamily: FONTS.sans, fontSize: 13, color: COLORS.text },
+  addRefBtn:             { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
+  addRefText:            { fontFamily: FONTS.sansMedium, color: COLORS.primary, fontSize: 13 },
+  error:                 { fontFamily: FONTS.sans, color: COLORS.no, marginTop: 12, fontSize: 13 },
+  btn:                   { backgroundColor: COLORS.primary, borderRadius: 4, paddingVertical: 16, alignItems: 'center', marginTop: 28 },
+  btnDisabled:           { opacity: 0.4 },
+  btnText:               { fontFamily: FONTS.sansBold, color: '#fff', fontSize: 16 },
 });
 
 // ─── Calendar styles ──────────────────────────────────────────────────────────
 
 const cal = StyleSheet.create({
   overlay:      { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', alignItems: 'center' },
-  card:         { backgroundColor: COLORS.surface, borderRadius: 16, padding: 20, width: 320, maxWidth: '90%' },
+  card:         { backgroundColor: COLORS.surface, borderRadius: 4, padding: 20, width: 320, maxWidth: '90%' },
   header:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
   navBtn:       { padding: 6 },
-  monthYear:    { fontSize: 16, fontWeight: '700', color: COLORS.text },
+  monthYear:    { fontFamily: FONTS.sansBold, fontSize: 16, color: COLORS.text },
   dayNames:     { flexDirection: 'row', marginBottom: 4 },
-  dayName:      { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '600', color: COLORS.textMuted },
+  dayName:      { flex: 1, textAlign: 'center', fontFamily: FONTS.sansMedium, fontSize: 11, color: COLORS.textMuted },
   row:          { flexDirection: 'row' },
-  cell:         { flex: 1, aspectRatio: 1, alignItems: 'center', justifyContent: 'center', margin: 1, borderRadius: 99 },
+  cell:         { flex: 1, aspectRatio: 1, alignItems: 'center', justifyContent: 'center', margin: 1, borderRadius: 2 },
   selectedCell: { backgroundColor: COLORS.primary },
   pastCell:     { opacity: 0.3 },
-  dayNum:       { fontSize: 14, color: COLORS.text },
-  selectedNum:  { color: '#fff', fontWeight: '700' },
+  dayNum:       { fontFamily: FONTS.sans, fontSize: 14, color: COLORS.text },
+  selectedNum:  { color: '#fff', fontFamily: FONTS.sansBold },
   pastNum:      { color: COLORS.textDim },
   closeBtn:     { marginTop: 16, alignItems: 'center', paddingVertical: 8 },
-  closeBtnText: { color: COLORS.textMuted, fontSize: 14 },
+  closeBtnText: { fontFamily: FONTS.sansMedium, color: COLORS.textMuted, fontSize: 14 },
 });

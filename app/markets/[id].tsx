@@ -9,7 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useMarket, useComments } from '@/hooks/useMarkets';
 import { useStake, useResolve } from '@/hooks/usePositions';
 import { supabase } from '@/lib/supabase';
-import { COLORS, STAKE_MIN, STAKE_MAX, DISPUTE_WINDOW_HOURS } from '@/lib/constants';
+import { COLORS, FONTS, STAKE_MIN, STAKE_MAX, DISPUTE_WINDOW_HOURS } from '@/lib/constants';
 import { getPoolOdds } from '@/utils/pool';
 import { shareOutcomeCard, shareMarketLink } from '@/utils/share';
 import { ProbabilityBar } from '@/components/ProbabilityBar';
@@ -19,7 +19,7 @@ import type { Outcome } from '@/lib/types';
 
 export default function MarketDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const { market, loading, fetchMarket } = useMarket(id, user?.id);
   const { comments, postComment, deleteComment } = useComments(id);
   const { stake }   = useStake();
@@ -92,7 +92,7 @@ export default function MarketDetailScreen() {
   const isResolving = market.status === 'resolving';
   const isSettled   = market.status === 'settled';
   const canResolve  = market.creator_id === user?.id;
-  const canStake = isOpen && !myPosition;
+  const canStake    = isOpen && !myPosition;
 
   const disputeDeadline = resolution
     ? new Date(new Date(resolution.created_at).getTime() + DISPUTE_WINDOW_HOURS * 3600_000)
@@ -100,22 +100,19 @@ export default function MarketDetailScreen() {
   const disputeOpen   = disputeDeadline && disputeDeadline > new Date() && !resolution?.disputed;
   const myDisputeVote = resolution?.dispute_votes?.find(v => v.user_id === user?.id);
 
+  const statusColor = STATUS_COLOR[market.status] ?? COLORS.textMuted;
+
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Stack.Screen options={{
         title: '',
         headerRight: () => (
           <View style={styles.headerActions}>
-            {/* Share invite code */}
             {market.invite_code && (
-              <TouchableOpacity
-                style={styles.headerBtn}
-                onPress={() => shareMarketLink(market)}
-              >
+              <TouchableOpacity style={styles.headerBtn} onPress={() => shareMarketLink(market)}>
                 <Ionicons name="person-add-outline" size={20} color={COLORS.textMuted} />
               </TouchableOpacity>
             )}
-            {/* Share outcome (settled markets) */}
             {isSettled && myPosition && (
               <TouchableOpacity
                 style={styles.headerBtn}
@@ -130,18 +127,18 @@ export default function MarketDetailScreen() {
 
       <ScrollView contentContainerStyle={styles.inner}>
 
-        {/* Status badge */}
-        <View style={[styles.badge, styles[`badge_${market.status}` as keyof typeof styles]]}>
-          <Text style={[styles.badgeText, { color: STATUS_TEXT[market.status] ?? COLORS.textMuted }]}>
+        {/* Status tag */}
+        <View style={[styles.statusTag, { borderColor: statusColor }]}>
+          <Text style={[styles.statusTagText, { color: statusColor }]}>
             {market.status.toUpperCase()}
           </Text>
         </View>
 
-        {/* Question */}
+        {/* Question — serif */}
         <Text style={styles.question}>{market.question}</Text>
         <Text style={styles.criteria}>{market.resolution_criteria}</Text>
 
-        {/* Probability bar */}
+        {/* Probability */}
         <ProbabilityBar odds={odds} />
         <View style={styles.poolRow}>
           <Text style={styles.poolYes}>YES ${odds.yesPool.toFixed(0)}</Text>
@@ -151,29 +148,30 @@ export default function MarketDetailScreen() {
 
         {/* My position */}
         {myPosition && (
-          <View style={[styles.myPosition, myPosition.outcome === 'YES' ? styles.posYes : styles.posNo]}>
-            <Text style={styles.myPosLabel}>Your position</Text>
-            <Text style={styles.myPosValue}>{myPosition.outcome} · ${myPosition.stake}</Text>
+          <View style={[styles.positionCard, myPosition.outcome === 'YES' ? styles.posYes : styles.posNo]}>
+            <Text style={styles.posLabel}>Your position</Text>
+            <Text style={styles.posValue}>{myPosition.outcome} · ${myPosition.stake}</Text>
             {isSettled && (
-              <Text style={styles.myPosResult}>
+              <Text style={styles.posResult}>
                 {resolution?.outcome === myPosition.outcome ? '🎯 Won' : '📉 Lost'}
               </Text>
             )}
           </View>
         )}
 
-        {/* CTAs */}
+        {/* Stake CTA */}
         {canStake && (
           <TouchableOpacity style={styles.stakeBtn} onPress={() => setStakeModal(true)}>
             <Text style={styles.stakeBtnText}>Take a position</Text>
           </TouchableOpacity>
         )}
 
+        {/* Resolve CTAs */}
         {(isLocked || isResolving) && canResolve && !resolution && (
           market.resolver_type === 'ai' ? (
-            <View>
+            <View style={styles.resolveWrap}>
               <TouchableOpacity
-                style={[styles.resolveBtn, aiResolving && styles.resolveBtnDisabled]}
+                style={[styles.resolveBtn, aiResolving && styles.btnDisabled]}
                 onPress={handleAiResolve}
                 disabled={aiResolving}
               >
@@ -198,13 +196,9 @@ export default function MarketDetailScreen() {
           )
         )}
 
-        {/* Invite code strip */}
+        {/* Invite strip */}
         {(isOpen || isLocked) && market.invite_code && (
-          <TouchableOpacity
-            style={styles.inviteStrip}
-            onPress={() => shareMarketLink(market)}
-            activeOpacity={0.7}
-          >
+          <TouchableOpacity style={styles.inviteStrip} onPress={() => shareMarketLink(market)} activeOpacity={0.7}>
             <Text style={styles.inviteLabel}>Invite code</Text>
             <Text style={styles.inviteCode}>{market.invite_code}</Text>
             <Ionicons name="share-outline" size={16} color={COLORS.primary} />
@@ -215,18 +209,21 @@ export default function MarketDetailScreen() {
         {resolution && (
           <View style={styles.resolutionCard}>
             <Text style={styles.resTitle}>
-              Resolution: <Text style={resolution.outcome === 'YES' ? styles.yes : styles.no}>{resolution.outcome}</Text>
+              Resolved{' '}
+              <Text style={resolution.outcome === 'YES' ? styles.yesText : styles.noText}>
+                {resolution.outcome}
+              </Text>
             </Text>
             {resolution.evidence_url && (
               <Text style={styles.resEvidence}>Evidence: {resolution.evidence_url}</Text>
             )}
             <Text style={styles.resBy}>
-              Resolved by {market.resolver_type === 'ai' ? 'Claude' : `@${resolution.resolver?.username}`}
+              by {market.resolver_type === 'ai' ? 'Claude' : `@${resolution.resolver?.username}`}
             </Text>
 
             {disputeOpen && !myDisputeVote && (
               <View style={styles.disputeWrap}>
-                <Text style={styles.disputeLabel}>Dispute this resolution? Vote your preferred outcome:</Text>
+                <Text style={styles.disputeLabel}>Dispute this resolution:</Text>
                 <View style={styles.disputeBtns}>
                   <TouchableOpacity style={styles.disputeYes} onPress={() => handleDispute('YES')}>
                     <Text style={styles.disputeBtnText}>YES</Text>
@@ -237,7 +234,6 @@ export default function MarketDetailScreen() {
                 </View>
               </View>
             )}
-
             {disputeError ? <Text style={styles.error}>{disputeError}</Text> : null}
             {myDisputeVote && (
               <Text style={styles.disputeVoted}>You voted {myDisputeVote.vote} in the dispute.</Text>
@@ -248,7 +244,9 @@ export default function MarketDetailScreen() {
         {/* Meta */}
         <View style={styles.meta}>
           <Text style={styles.metaItem}>Closes {new Date(market.closes_at).toLocaleDateString()}</Text>
+          <Text style={styles.metaDot}>·</Text>
           <Text style={styles.metaItem}>by @{market.creator?.username}</Text>
+          <Text style={styles.metaDot}>·</Text>
           <Text style={styles.metaItem}>{market.resolver_type === 'ai' ? 'Claude resolves' : 'Creator resolves'}</Text>
         </View>
 
@@ -273,7 +271,7 @@ export default function MarketDetailScreen() {
       </ScrollView>
 
       {/* Comment input */}
-      <View style={styles.commentInput}>
+      <View style={styles.commentInputWrap}>
         <TextInput
           style={styles.commentField}
           value={comment}
@@ -308,7 +306,7 @@ export default function MarketDetailScreen() {
   );
 }
 
-const STATUS_TEXT: Record<string, string> = {
+const STATUS_COLOR: Record<string, string> = {
   open:      COLORS.yes,
   locked:    COLORS.warning,
   resolving: COLORS.primary,
@@ -317,63 +315,73 @@ const STATUS_TEXT: Record<string, string> = {
 };
 
 const styles = StyleSheet.create({
-  container:       { flex: 1, backgroundColor: COLORS.bg },
-  center:          { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  inner:           { padding: 20, paddingBottom: 40 },
-  headerActions:   { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  headerBtn:       { padding: 6 },
-  badge:           { alignSelf: 'flex-start', borderRadius: 6, paddingHorizontal: 10, paddingVertical: 4, marginBottom: 12 },
-  badge_open:      { backgroundColor: '#dcfce7' },
-  badge_locked:    { backgroundColor: '#fef3c7' },
-  badge_resolving: { backgroundColor: '#ede9fe' },
-  badge_settled:   { backgroundColor: '#f0fdf4' },
-  badge_voided:    { backgroundColor: '#fee2e2' },
-  badgeText:       { fontSize: 11, fontWeight: '700', letterSpacing: 1 },
-  error:           { color: COLORS.no, fontSize: 13, marginTop: 8 },
-  question:        { fontSize: 22, fontWeight: '700', color: COLORS.text, lineHeight: 30, marginBottom: 10 },
-  criteria:        { fontSize: 13, color: COLORS.textMuted, lineHeight: 19, marginBottom: 20 },
-  poolRow:         { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6, marginBottom: 20 },
-  poolYes:         { color: COLORS.yes, fontWeight: '600', fontSize: 13 },
-  poolNo:          { color: COLORS.no, fontWeight: '600', fontSize: 13 },
-  poolTotal:       { color: COLORS.textMuted, fontSize: 13 },
-  myPosition:      { borderRadius: 12, padding: 14, marginBottom: 16, borderWidth: 1 },
-  posYes:          { backgroundColor: '#f0fdf4', borderColor: COLORS.yes },
-  posNo:           { backgroundColor: '#fef2f2', borderColor: COLORS.no },
-  myPosLabel:      { fontSize: 11, color: COLORS.textMuted, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1 },
-  myPosValue:      { fontSize: 18, fontWeight: '800', color: COLORS.text, marginTop: 4 },
-  myPosResult:     { fontSize: 14, marginTop: 4, fontWeight: '600', color: COLORS.text },
-  stakeBtn:        { backgroundColor: COLORS.primary, borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginBottom: 12 },
-  stakeBtnText:    { color: '#fff', fontWeight: '700', fontSize: 16 },
-  resolveBtn:          { borderWidth: 1, borderColor: COLORS.primary, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginBottom: 8 },
-  resolveBtnDisabled:  { opacity: 0.5 },
+  container:      { flex: 1, backgroundColor: COLORS.bg },
+  center:         { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.bg },
+  inner:          { padding: 20, paddingBottom: 40 },
+  headerActions:  { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  headerBtn:      { padding: 6 },
+
+  statusTag:      { alignSelf: 'flex-start', borderWidth: 1, borderRadius: 2, paddingHorizontal: 8, paddingVertical: 3, marginBottom: 14 },
+  statusTagText:  { fontSize: 10, fontFamily: FONTS.sansBold, letterSpacing: 1.2, textTransform: 'uppercase' },
+
+  question:       { fontFamily: FONTS.serif, fontSize: 24, color: COLORS.text, lineHeight: 32, marginBottom: 10 },
+  criteria:       { fontFamily: FONTS.sans, fontSize: 13, color: COLORS.textMuted, lineHeight: 19, marginBottom: 20 },
+
+  poolRow:        { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, marginBottom: 20 },
+  poolYes:        { fontFamily: FONTS.sansMedium, color: COLORS.yes, fontSize: 13 },
+  poolNo:         { fontFamily: FONTS.sansMedium, color: COLORS.no, fontSize: 13 },
+  poolTotal:      { fontFamily: FONTS.sans, color: COLORS.textMuted, fontSize: 13 },
+
+  positionCard:   { borderRadius: 4, padding: 14, marginBottom: 16, borderWidth: 1 },
+  posYes:         { backgroundColor: COLORS.yesLight, borderColor: COLORS.yes },
+  posNo:          { backgroundColor: COLORS.noLight,  borderColor: COLORS.no },
+  posLabel:       { fontFamily: FONTS.sansMedium, fontSize: 11, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: 1 },
+  posValue:       { fontFamily: FONTS.sansBold, fontSize: 18, color: COLORS.text, marginTop: 4 },
+  posResult:      { fontFamily: FONTS.sansMedium, fontSize: 14, marginTop: 4, color: COLORS.text },
+
+  stakeBtn:       { backgroundColor: COLORS.primary, borderRadius: 4, paddingVertical: 16, alignItems: 'center', marginBottom: 12 },
+  stakeBtnText:   { fontFamily: FONTS.sansBold, color: '#fff', fontSize: 16 },
+
+  resolveWrap:         { marginBottom: 8 },
+  resolveBtn:          { borderWidth: 1, borderColor: COLORS.primary, borderRadius: 4, paddingVertical: 14, alignItems: 'center', marginBottom: 8 },
+  btnDisabled:         { opacity: 0.5 },
   resolveBtnInner:     { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  resolveBtnText:      { color: COLORS.primary, fontWeight: '700', fontSize: 15 },
-  manualBtn:           { paddingVertical: 8, alignItems: 'center', marginBottom: 4 },
-  manualBtnText:       { color: COLORS.textDim, fontSize: 13 },
-  inviteStrip:     { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: COLORS.surface, borderRadius: 10, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: COLORS.border },
-  inviteLabel:     { color: COLORS.textMuted, fontSize: 12 },
-  inviteCode:      { flex: 1, color: COLORS.text, fontWeight: '700', fontFamily: 'monospace', letterSpacing: 2, fontSize: 14 },
-  resolutionCard:  { backgroundColor: COLORS.surface, borderRadius: 12, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: COLORS.border },
-  resTitle:        { fontSize: 16, fontWeight: '700', color: COLORS.text, marginBottom: 4 },
-  resEvidence:     { color: COLORS.textMuted, fontSize: 13, marginBottom: 4 },
-  resBy:           { color: COLORS.textDim, fontSize: 12 },
-  yes:             { color: COLORS.yes },
-  no:              { color: COLORS.no },
-  disputeWrap:     { marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: COLORS.border },
-  disputeLabel:    { color: COLORS.textMuted, fontSize: 13, marginBottom: 10 },
-  disputeBtns:     { flexDirection: 'row', gap: 10 },
-  disputeYes:      { flex: 1, backgroundColor: '#dcfce7', borderRadius: 8, paddingVertical: 10, alignItems: 'center' },
-  disputeNo:       { flex: 1, backgroundColor: '#fee2e2', borderRadius: 8, paddingVertical: 10, alignItems: 'center' },
-  disputeBtnText:  { color: COLORS.text, fontWeight: '700', fontSize: 14 },
-  disputeVoted:    { color: COLORS.textMuted, fontSize: 13, marginTop: 10 },
-  meta:            { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 24 },
-  metaItem:        { color: COLORS.textDim, fontSize: 12 },
-  commentsTitle:   { fontSize: 15, fontWeight: '700', color: COLORS.text, marginBottom: 12 },
-  commentRow:      { marginBottom: 14, padding: 12, backgroundColor: COLORS.surface, borderRadius: 10, borderWidth: 1, borderColor: COLORS.border },
-  commentMeta:     { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  commentUser:     { color: COLORS.primary, fontWeight: '600', fontSize: 13 },
-  commentTime:     { color: COLORS.textDim, fontSize: 11, flex: 1 },
-  commentContent:  { color: COLORS.text, fontSize: 14, lineHeight: 20 },
-  commentInput:    { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderTopWidth: 1, borderTopColor: COLORS.border, backgroundColor: COLORS.surface },
-  commentField:    { flex: 1, color: COLORS.text, fontSize: 14 },
+  resolveBtnText:      { fontFamily: FONTS.sansBold, color: COLORS.primary, fontSize: 15 },
+  manualBtn:           { paddingVertical: 8, alignItems: 'center' },
+  manualBtnText:       { fontFamily: FONTS.sans, color: COLORS.textDim, fontSize: 13 },
+
+  inviteStrip:    { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: COLORS.surface, borderRadius: 4, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: COLORS.border },
+  inviteLabel:    { fontFamily: FONTS.sans, color: COLORS.textMuted, fontSize: 12 },
+  inviteCode:     { flex: 1, fontFamily: 'monospace', color: COLORS.text, fontWeight: '700', letterSpacing: 2, fontSize: 14 },
+
+  resolutionCard: { backgroundColor: COLORS.surface, borderRadius: 4, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: COLORS.border },
+  resTitle:       { fontFamily: FONTS.sansBold, fontSize: 16, color: COLORS.text, marginBottom: 4 },
+  resEvidence:    { fontFamily: FONTS.sans, color: COLORS.textMuted, fontSize: 13, marginBottom: 4 },
+  resBy:          { fontFamily: FONTS.sans, color: COLORS.textDim, fontSize: 12 },
+  yesText:        { color: COLORS.yes },
+  noText:         { color: COLORS.no },
+
+  disputeWrap:    { marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: COLORS.border },
+  disputeLabel:   { fontFamily: FONTS.sans, color: COLORS.textMuted, fontSize: 13, marginBottom: 10 },
+  disputeBtns:    { flexDirection: 'row', gap: 10 },
+  disputeYes:     { flex: 1, backgroundColor: COLORS.yesLight, borderRadius: 4, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: COLORS.yes },
+  disputeNo:      { flex: 1, backgroundColor: COLORS.noLight,  borderRadius: 4, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: COLORS.no },
+  disputeBtnText: { fontFamily: FONTS.sansBold, color: COLORS.text, fontSize: 14 },
+  disputeVoted:   { fontFamily: FONTS.sans, color: COLORS.textMuted, fontSize: 13, marginTop: 10 },
+
+  error:          { fontFamily: FONTS.sans, color: COLORS.no, fontSize: 13, marginTop: 8 },
+
+  meta:           { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 24, alignItems: 'center' },
+  metaItem:       { fontFamily: FONTS.sans, color: COLORS.textDim, fontSize: 12 },
+  metaDot:        { color: COLORS.textDim, fontSize: 12 },
+
+  commentsTitle:  { fontFamily: FONTS.sansBold, fontSize: 15, color: COLORS.text, marginBottom: 12 },
+  commentRow:     { marginBottom: 12, padding: 12, backgroundColor: COLORS.surface, borderRadius: 4, borderWidth: 1, borderColor: COLORS.border },
+  commentMeta:    { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+  commentUser:    { fontFamily: FONTS.sansMedium, color: COLORS.primary, fontSize: 13 },
+  commentTime:    { fontFamily: FONTS.sans, color: COLORS.textDim, fontSize: 11, flex: 1 },
+  commentContent: { fontFamily: FONTS.sans, color: COLORS.text, fontSize: 14, lineHeight: 20 },
+
+  commentInputWrap: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderTopWidth: 1, borderTopColor: COLORS.border, backgroundColor: COLORS.surface },
+  commentField:     { flex: 1, fontFamily: FONTS.sans, color: COLORS.text, fontSize: 14 },
 });

@@ -1,29 +1,31 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '@/lib/constants';
+import { COLORS, FONTS } from '@/lib/constants';
 
 export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerStyle: { backgroundColor: COLORS.surface },
-        headerTintColor: COLORS.text,
-        headerTitleStyle: { fontWeight: '700' },
+        headerStyle:      { backgroundColor: COLORS.surface },
+        headerTintColor:  COLORS.text,
+        headerTitleStyle: { fontFamily: FONTS.sansBold, fontSize: 16 },
         headerTitleAlign: 'center',
         headerShadowVisible: false,
         tabBarStyle: {
           backgroundColor: COLORS.surface,
-          borderTopColor: COLORS.border,
-          borderTopWidth: 1,
+          borderTopColor:  COLORS.border,
+          borderTopWidth:  1,
         },
-        tabBarActiveTintColor: COLORS.primary,
+        tabBarActiveTintColor:   COLORS.primary,
         tabBarInactiveTintColor: COLORS.textDim,
+        tabBarLabelStyle: { fontFamily: FONTS.sansMedium, fontSize: 11 },
       }}
     >
       <Tabs.Screen
         name="feed"
         options={{
           title: 'Feed',
+          headerShown: false,
           tabBarIcon: ({ color, size }) => <Ionicons name="flash" size={size} color={color} />,
         }}
       />
