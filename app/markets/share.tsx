@@ -42,7 +42,7 @@ export default function ShareMarketScreen() {
 
   const handleShare = async () => {
     await Share.share({
-      message: `"${question}"\nJoin my prediction on Hunch: ${shareUrl}`,
+      message: `Talk is cheap`,
       url:     shareUrl,
       title:   question,
     });
