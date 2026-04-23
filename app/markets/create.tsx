@@ -31,9 +31,9 @@ function getPresetDate(preset: Exclude<DurationPreset, 'custom'>): Date {
 
 // ─── Resolver options ─────────────────────────────────────────────────────────
 
-const RESOLVER_OPTIONS: { value: ResolverType; label: string; desc: string }[] = [
-  { value: 'autocrat', label: 'Creator decides', desc: 'You resolve it manually when the market closes' },
-  { value: 'ai',       label: 'Claude decides',  desc: 'AI reads your reference links and resolves automatically' },
+const RESOLVER_OPTIONS: { value: ResolverType; label: string; desc: string; emoji: string }[] = [
+  { value: 'autocrat', label: 'Me',       emoji: '👤', desc: 'You call it when done' },
+  { value: 'ai',       label: 'AI Judge', emoji: '🤖', desc: 'Claude reads the outcome' },
 ];
 
 // ─── Simple calendar picker ───────────────────────────────────────────────────
@@ -250,28 +250,27 @@ export default function CreateMarketScreen() {
           })}
         </View>
 
-        {/* Resolution method */}
-        <Text style={styles.label}>Resolution method</Text>
-        {RESOLVER_OPTIONS.map(opt => (
-          <TouchableOpacity
-            key={opt.value}
-            style={[styles.resolverOption, resolverType === opt.value && styles.resolverSelected]}
-            onPress={() => setResolver(opt.value)}
-            activeOpacity={0.7}
-          >
-            <View style={styles.resolverLeft}>
-              <Text style={[styles.resolverLabel, resolverType === opt.value && styles.resolverLabelActive]}>
-                {opt.label}
-              </Text>
-              <Text style={styles.resolverDesc}>{opt.desc}</Text>
-            </View>
-            {resolverType === opt.value && (
-              <View style={styles.checkDot}>
-                <Ionicons name="checkmark" size={12} color="#fff" />
-              </View>
-            )}
-          </TouchableOpacity>
-        ))}
+        {/* Resolution method — WHO DECIDES? */}
+        <Text style={styles.label}>Who decides?</Text>
+        <View style={styles.resolverRow}>
+          {RESOLVER_OPTIONS.map(opt => {
+            const active = resolverType === opt.value;
+            return (
+              <TouchableOpacity
+                key={opt.value}
+                style={[styles.resolverCard, active && styles.resolverCardActive]}
+                onPress={() => setResolver(opt.value)}
+                activeOpacity={0.75}
+              >
+                <Text style={styles.resolverEmoji}>{opt.emoji}</Text>
+                <Text style={[styles.resolverLabel, active && styles.resolverLabelActive]}>
+                  {opt.label}
+                </Text>
+                <Text style={styles.resolverDesc}>{opt.desc}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
 
         {resolverType === 'ai' && (
           <View style={styles.refSection}>
@@ -343,13 +342,13 @@ const styles = StyleSheet.create({
   durationBtnActive:     { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   durationBtnText:       { fontFamily: FONTS.sansMedium, fontSize: 13, color: COLORS.textMuted },
   durationBtnTextActive: { color: '#fff' },
-  resolverOption:        { backgroundColor: COLORS.surface, borderRadius: 4, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: COLORS.border, flexDirection: 'row', alignItems: 'center' },
-  resolverSelected:      { borderColor: COLORS.primary },
-  resolverLeft:          { flex: 1 },
-  resolverLabel:         { fontFamily: FONTS.sansMedium, color: COLORS.text, fontSize: 14 },
+  resolverRow:           { flexDirection: 'row', gap: 10 },
+  resolverCard:          { flex: 1, backgroundColor: COLORS.surface, borderRadius: 4, padding: 16, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center', gap: 6 },
+  resolverCardActive:    { borderColor: COLORS.primary, backgroundColor: COLORS.primaryLight },
+  resolverEmoji:         { fontSize: 28 },
+  resolverLabel:         { fontFamily: FONTS.sansBold, color: COLORS.text, fontSize: 15 },
   resolverLabelActive:   { color: COLORS.primary },
-  resolverDesc:          { fontFamily: FONTS.sans, color: COLORS.textMuted, fontSize: 12, marginTop: 2 },
-  checkDot:              { width: 20, height: 20, borderRadius: 10, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center' },
+  resolverDesc:          { fontFamily: FONTS.sans, color: COLORS.textMuted, fontSize: 12, textAlign: 'center' },
   refSection:            { marginTop: 16, backgroundColor: COLORS.surfaceAlt, borderRadius: 4, padding: 14, borderWidth: 1, borderColor: COLORS.border },
   refLabel:              { fontFamily: FONTS.sansMedium, color: COLORS.text, fontSize: 14, marginBottom: 4 },
   refHint:               { fontFamily: FONTS.sans, color: COLORS.textMuted, fontSize: 12, lineHeight: 17, marginBottom: 12 },

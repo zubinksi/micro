@@ -117,7 +117,12 @@ export default function FeedScreen() {
 function FeedHeader() {
   return (
     <View style={styles.header}>
-      <Text style={styles.logo}>Micro</Text>
+      <View style={styles.headerRow}>
+        <Text style={styles.logo}>Hunch</Text>
+        <TouchableOpacity style={styles.profileBtn} onPress={() => router.push('/profile')}>
+          <Ionicons name="person-circle-outline" size={28} color={COLORS.textMuted} />
+        </TouchableOpacity>
+      </View>
       <Text style={styles.tagline}>Group prediction markets</Text>
     </View>
   );
@@ -127,7 +132,9 @@ const styles = StyleSheet.create({
   container:     { flex: 1, backgroundColor: COLORS.bg },
   center:        { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.bg },
   header:        { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 16 },
+  headerRow:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   logo:          { fontFamily: FONTS.serif, fontSize: 32, color: COLORS.text, letterSpacing: -0.5 },
+  profileBtn:    { padding: 4 },
   tagline:       { fontFamily: FONTS.sans, fontSize: 13, color: COLORS.textMuted, marginTop: 2 },
   list:          { paddingBottom: 16 },
   empty:         { alignItems: 'center', paddingTop: 80, paddingHorizontal: 32 },

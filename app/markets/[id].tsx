@@ -127,11 +127,21 @@ export default function MarketDetailScreen() {
 
       <ScrollView contentContainerStyle={styles.inner}>
 
-        {/* Status tag */}
-        <View style={[styles.statusTag, { borderColor: statusColor }]}>
-          <Text style={[styles.statusTagText, { color: statusColor }]}>
-            {market.status.toUpperCase()}
-          </Text>
+        {/* Status + resolver type row */}
+        <View style={styles.topMeta}>
+          <View style={[styles.statusTag, { borderColor: statusColor }]}>
+            <Text style={[styles.statusTagText, { color: statusColor }]}>
+              {market.status.toUpperCase()}
+            </Text>
+          </View>
+          <View style={styles.resolverBadge}>
+            <Text style={styles.resolverEmoji}>
+              {market.resolver_type === 'ai' ? '🤖' : '👤'}
+            </Text>
+            <Text style={styles.resolverBadgeText}>
+              {market.resolver_type === 'ai' ? 'AI Judge' : 'Creator decides'}
+            </Text>
+          </View>
         </View>
 
         {/* Question — serif */}
@@ -218,8 +228,13 @@ export default function MarketDetailScreen() {
               <Text style={styles.resEvidence}>Evidence: {resolution.evidence_url}</Text>
             )}
             <Text style={styles.resBy}>
-              by {market.resolver_type === 'ai' ? 'Claude' : `@${resolution.resolver?.username}`}
+              by {market.resolver_type === 'ai' ? '🤖 Claude' : `👤 @${resolution.resolver?.username}`}
             </Text>
+            {resolution.summary && (
+              <View style={styles.summaryBox}>
+                <Text style={styles.summaryText}>{resolution.summary}</Text>
+              </View>
+            )}
 
             {disputeOpen && !myDisputeVote && (
               <View style={styles.disputeWrap}>
@@ -246,8 +261,6 @@ export default function MarketDetailScreen() {
           <Text style={styles.metaItem}>Closes {new Date(market.closes_at).toLocaleDateString()}</Text>
           <Text style={styles.metaDot}>·</Text>
           <Text style={styles.metaItem}>by @{market.creator?.username}</Text>
-          <Text style={styles.metaDot}>·</Text>
-          <Text style={styles.metaItem}>{market.resolver_type === 'ai' ? 'Claude resolves' : 'Creator resolves'}</Text>
         </View>
 
         {/* Comments */}
@@ -321,8 +334,12 @@ const styles = StyleSheet.create({
   headerActions:  { flexDirection: 'row', alignItems: 'center', gap: 4 },
   headerBtn:      { padding: 6 },
 
-  statusTag:      { alignSelf: 'flex-start', borderWidth: 1, borderRadius: 2, paddingHorizontal: 8, paddingVertical: 3, marginBottom: 14 },
+  topMeta:        { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14, flexWrap: 'wrap' },
+  statusTag:      { borderWidth: 1, borderRadius: 2, paddingHorizontal: 8, paddingVertical: 3 },
   statusTagText:  { fontSize: 10, fontFamily: FONTS.sansBold, letterSpacing: 1.2, textTransform: 'uppercase' },
+  resolverBadge:  { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: COLORS.surfaceAlt, borderRadius: 2, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1, borderColor: COLORS.border },
+  resolverEmoji:  { fontSize: 13 },
+  resolverBadgeText: { fontFamily: FONTS.sansMedium, fontSize: 11, color: COLORS.textMuted },
 
   question:       { fontFamily: FONTS.serif, fontSize: 24, color: COLORS.text, lineHeight: 32, marginBottom: 10 },
   criteria:       { fontFamily: FONTS.sans, fontSize: 13, color: COLORS.textMuted, lineHeight: 19, marginBottom: 20 },
@@ -357,7 +374,9 @@ const styles = StyleSheet.create({
   resolutionCard: { backgroundColor: COLORS.surface, borderRadius: 4, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: COLORS.border },
   resTitle:       { fontFamily: FONTS.sansBold, fontSize: 16, color: COLORS.text, marginBottom: 4 },
   resEvidence:    { fontFamily: FONTS.sans, color: COLORS.textMuted, fontSize: 13, marginBottom: 4 },
-  resBy:          { fontFamily: FONTS.sans, color: COLORS.textDim, fontSize: 12 },
+  resBy:          { fontFamily: FONTS.sans, color: COLORS.textDim, fontSize: 12, marginBottom: 4 },
+  summaryBox:     { marginTop: 10, padding: 10, backgroundColor: COLORS.primaryLight, borderRadius: 4, borderWidth: 1, borderColor: COLORS.primary + '30' },
+  summaryText:    { fontFamily: FONTS.sans, color: COLORS.primary, fontSize: 13, lineHeight: 19, fontStyle: 'italic' },
   yesText:        { color: COLORS.yes },
   noText:         { color: COLORS.no },
 

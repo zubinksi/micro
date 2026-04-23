@@ -30,7 +30,7 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.inner}>
-        <Text style={styles.wordmark}>Micro</Text>
+        <Text style={styles.wordmark}>Hunch</Text>
         <Text style={styles.tagline}>Prediction markets for your group chat.</Text>
 
         {step === 'email' ? (

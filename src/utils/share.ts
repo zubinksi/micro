@@ -6,14 +6,14 @@ function getAppBaseUrl(): string {
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
     return window.location.origin;
   }
-  return 'https://micro-sage.vercel.app';
+  return 'https://hunch.vercel.app';
 }
 
 export async function shareMarketLink(market: Market) {
   const base  = getAppBaseUrl();
   const ogUrl = `${base}/api/og?id=${market.id}`;
   await Share.share({
-    message: `"${market.question}"\nJoin the prediction on Micro: ${ogUrl}`,
+    message: `"${market.question}"\nJoin the prediction on Hunch: ${ogUrl}`,
     url:     ogUrl,
     title:   market.question,
   });
@@ -28,7 +28,7 @@ export async function shareOutcomeCard(market: Market, position: Position, won: 
   const verb = won ? '🎯 Called it' : '📉 Missed this one';
   await Share.share({
     message: [
-      `${verb} on Micro`,
+      `${verb} on Hunch`,
       `"${market.question}"`,
       `I bet ${position.outcome} at ${impliedPct}% — and I was ${won ? 'right' : 'wrong'}.`,
       ogUrl,

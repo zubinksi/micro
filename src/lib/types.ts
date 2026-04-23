@@ -69,6 +69,7 @@ export interface Resolution {
   evidence_url: string | null;
   resolved_by: string;
   disputed: boolean;
+  summary: string | null;
   created_at: string;
   resolver?: Profile;
   dispute_votes?: DisputeVote[];

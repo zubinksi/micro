@@ -6,9 +6,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const host  = req.headers.host as string;
   const base  = `${proto}://${host}`;
 
-  let title       = 'Micro — Prediction Markets';
+  let title       = 'Hunch — Prediction Markets';
   let description = 'Private prediction markets for your group chat.';
   const marketUrl = id ? `${base}/markets/${id}` : base;
+  const imageUrl  = id ? `${base}/api/og-image?id=${id}` : `${base}/api/og-image`;
 
   if (id) {
     try {
@@ -44,10 +45,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   <meta property="og:description" content="${esc(description)}">
   <meta property="og:type" content="website">
   <meta property="og:url" content="${esc(marketUrl)}">
-  <meta property="og:site_name" content="Micro">
-  <meta name="twitter:card" content="summary">
+  <meta property="og:image" content="${esc(imageUrl)}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:site_name" content="Hunch">
+  <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="${esc(title)}">
   <meta name="twitter:description" content="${esc(description)}">
+  <meta name="twitter:image" content="${esc(imageUrl)}">
   <meta http-equiv="refresh" content="0;url=${esc(marketUrl)}">
 </head>
 <body>

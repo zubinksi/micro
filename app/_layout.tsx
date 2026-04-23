@@ -59,6 +59,7 @@ export default function RootLayout() {
         <Stack.Screen name="markets/join"   options={{ title: 'Join Market',  presentation: 'modal', headerTitleAlign: 'center' }} />
         <Stack.Screen name="markets/[id]"   options={{ title: '' }} />
         <Stack.Screen name="markets/share"  options={{ title: '', presentation: 'modal', headerShown: false }} />
+        <Stack.Screen name="profile"        options={{ title: 'Profile', headerTitleAlign: 'center' }} />
       </Stack>
     </>
   );

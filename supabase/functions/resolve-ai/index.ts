@@ -10,12 +10,11 @@ const corsHeaders = {
 async function fetchPageText(url: string): Promise<string> {
   try {
     const r = await fetch(url, {
-      headers: { 'User-Agent': 'Micro-AI-Resolver/1.0' },
+      headers: { 'User-Agent': 'Hunch-AI-Resolver/1.0' },
       signal: AbortSignal.timeout(8000),
     });
     if (!r.ok) return '';
     const html = await r.text();
-    // Strip tags, collapse whitespace, cap length
     return html
       .replace(/<script[\s\S]*?<\/script>/gi, '')
       .replace(/<style[\s\S]*?<\/style>/gi, '')
@@ -33,11 +32,10 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
-  const supabaseUrl   = Deno.env.get('SUPABASE_URL')!;
-  const serviceKey    = Deno.env.get('SERVICE_ROLE_KEY')!;
-  const anthropicKey  = Deno.env.get('ANTHROPIC_API_KEY')!;
+  const supabaseUrl  = Deno.env.get('SUPABASE_URL')!;
+  const serviceKey   = Deno.env.get('SERVICE_ROLE_KEY')!;
+  const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY')!;
 
-  // Verify caller is authenticated
   const authHeader = req.headers.get('Authorization');
   if (!authHeader) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -88,7 +86,6 @@ Deno.serve(async (req) => {
     });
   }
 
-  // Only the creator can trigger AI resolution
   if (market.creator_id !== user.id) {
     return new Response(JSON.stringify({ error: 'Only the creator can trigger AI resolution' }), {
       status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -107,7 +104,7 @@ Deno.serve(async (req) => {
     ? `Reference material:\n---\n${refParts.join('\n\n---\n')}\n---`
     : 'No reference material provided.';
 
-  const prompt = `You are resolving a binary prediction market. Your answer must be exactly one word: YES, NO, or UNCERTAIN.
+  const prompt = `You are resolving a binary prediction market. Respond with valid JSON only — no extra text.
 
 Question: ${market.question}
 Resolution criteria: ${market.resolution_criteria}
@@ -115,10 +112,13 @@ Today's date: ${new Date().toISOString().split('T')[0]}
 
 ${refBlock}
 
-Based on the resolution criteria and reference material, did this market resolve YES or NO?
-Answer UNCERTAIN only if the reference material is clearly insufficient to decide.
+Based on the resolution criteria and reference material, respond with this exact JSON format:
+{
+  "outcome": "YES" | "NO" | "UNCERTAIN",
+  "summary": "One or two sentences explaining how you ruled on this market."
+}
 
-Answer (one word):`;
+Use UNCERTAIN only if the reference material is clearly insufficient to decide. The summary should be written in plain language for participants, explaining the key evidence that led to the ruling.`;
 
   const anthropicRes = await fetch(ANTHROPIC_API, {
     method: 'POST',
@@ -129,7 +129,7 @@ Answer (one word):`;
     },
     body: JSON.stringify({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 5,
+      max_tokens: 200,
       messages: [{ role: 'user', content: prompt }],
     }),
   });
@@ -143,9 +143,23 @@ Answer (one word):`;
   }
 
   const anthropicData = await anthropicRes.json();
-  const rawAnswer = (anthropicData.content?.[0]?.text ?? '').trim().toUpperCase().replace(/[^A-Z]/g, '');
+  const rawText = (anthropicData.content?.[0]?.text ?? '').trim();
 
-  if (rawAnswer !== 'YES' && rawAnswer !== 'NO') {
+  let outcome: string = 'UNCERTAIN';
+  let summary: string | null = null;
+
+  try {
+    const parsed = JSON.parse(rawText);
+    outcome = (parsed.outcome ?? '').toUpperCase().replace(/[^A-Z]/g, '');
+    summary = parsed.summary ?? null;
+  } catch {
+    // Fallback: scan raw text for YES/NO
+    const upper = rawText.toUpperCase();
+    if (upper.includes('YES')) outcome = 'YES';
+    else if (upper.includes('NO')) outcome = 'NO';
+  }
+
+  if (outcome !== 'YES' && outcome !== 'NO') {
     return new Response(JSON.stringify({
       outcome: 'UNCERTAIN',
       message: 'Claude could not determine the outcome from the reference material. Please resolve manually.',
@@ -154,12 +168,10 @@ Answer (one word):`;
     });
   }
 
-  const outcome = rawAnswer as 'YES' | 'NO';
-
-  // Insert resolution (use creator as resolved_by since AI performed it)
   const { error: rErr } = await admin.from('resolutions').insert({
     market_id:    market.id,
     outcome,
+    summary,
     evidence_url: urls.length > 0 ? urls.join(', ') : null,
     resolved_by:  market.creator_id,
   });
@@ -172,7 +184,7 @@ Answer (one word):`;
 
   await admin.from('markets').update({ status: 'resolving' }).eq('id', market.id);
 
-  return new Response(JSON.stringify({ outcome }), {
+  return new Response(JSON.stringify({ outcome, summary }), {
     status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
 });
