@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  TextInput, KeyboardAvoidingView, Platform, ActivityIndicator,
+  TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Clipboard,
 } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -109,16 +109,16 @@ export default function MarketDetailScreen() {
         headerRight: () => (
           <View style={styles.headerActions}>
             {market.invite_code && (
-              <TouchableOpacity style={styles.headerBtn} onPress={() => shareMarketLink(market)}>
-                <Ionicons name="person-add-outline" size={20} color={COLORS.textMuted} />
+              <TouchableOpacity style={styles.shareBtn} onPress={() => shareMarketLink(market)}>
+                <Text style={styles.shareBtnText}>Share</Text>
               </TouchableOpacity>
             )}
             {isSettled && myPosition && (
               <TouchableOpacity
-                style={styles.headerBtn}
+                style={styles.shareBtn}
                 onPress={() => shareOutcomeCard(market, myPosition, resolution?.outcome === myPosition.outcome)}
               >
-                <Ionicons name="share-outline" size={20} color={COLORS.textMuted} />
+                <Text style={styles.shareBtnText}>Share</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -198,11 +198,13 @@ export default function MarketDetailScreen() {
 
         {/* Invite strip */}
         {(isOpen || isLocked) && market.invite_code && (
-          <TouchableOpacity style={styles.inviteStrip} onPress={() => shareMarketLink(market)} activeOpacity={0.7}>
+          <View style={styles.inviteStrip}>
             <Text style={styles.inviteLabel}>Invite code</Text>
             <Text style={styles.inviteCode}>{market.invite_code}</Text>
-            <Ionicons name="share-outline" size={16} color={COLORS.primary} />
-          </TouchableOpacity>
+            <TouchableOpacity onPress={() => Clipboard.setString(market.invite_code!)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="copy-outline" size={16} color={COLORS.primary} />
+            </TouchableOpacity>
+          </View>
         )}
 
         {/* Resolution card */}
@@ -339,7 +341,8 @@ const styles = StyleSheet.create({
   center:         { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.bg },
   inner:          { padding: 20, paddingBottom: 40 },
   headerActions:  { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  headerBtn:      { padding: 6 },
+  shareBtn:       { paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: COLORS.primary, borderRadius: 4 },
+  shareBtnText:   { fontFamily: FONTS.sansBold, color: COLORS.primary, fontSize: 14 },
 
   statusTag:      { alignSelf: 'flex-start', borderWidth: 1, borderRadius: 2, paddingHorizontal: 8, paddingVertical: 3, marginBottom: 14 },
   statusTagText:  { fontSize: 10, fontFamily: FONTS.sansBold, letterSpacing: 1.2, textTransform: 'uppercase' },
