@@ -1,11 +1,28 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import satori from 'satori';
 import sharp from 'sharp';
+import { createElement as h } from 'react';
+
+// Cache fonts at the module level so warm Lambda invocations skip the fetch
+let fontRegular: ArrayBuffer | null = null;
+let fontBold: ArrayBuffer | null = null;
+
+async function loadFonts() {
+  if (!fontRegular || !fontBold) {
+    const [r, b] = await Promise.all([
+      fetch('https://cdn.jsdelivr.net/npm/@fontsource/inter@5/files/inter-latin-400-normal.woff2'),
+      fetch('https://cdn.jsdelivr.net/npm/@fontsource/inter@5/files/inter-latin-700-normal.woff2'),
+    ]);
+    fontRegular = await r.arrayBuffer();
+    fontBold    = await b.arrayBuffer();
+  }
+  return { regular: fontRegular!, bold: fontBold! };
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const id    = req.query.id as string | undefined;
   const proto = (req.headers['x-forwarded-proto'] as string) ?? 'https';
   const host  = req.headers.host as string;
-  const base  = `${proto}://${host}`;
 
   let question = 'A prediction on Hunch';
   let yesPct   = 50;
@@ -41,50 +58,79 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const noPct       = 100 - yesPct;
   const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
   const statusColor = status === 'open' ? '#2D6A4F' : status === 'settled' ? '#6B6259' : '#C17F3E';
+  const poolLabel   = pool > 0 ? `$${pool.toFixed(0)} pool` : 'No stakes yet';
+  const fontSize    = question.length > 80 ? 36 : question.length > 50 ? 42 : 50;
 
-  // Word-wrap question across up to two lines
-  const words  = question.split(' ');
-  const midway = Math.ceil(words.length / 2);
-  const line1  = words.slice(0, midway).join(' ');
-  const line2  = words.slice(midway).join(' ');
-  const hasTwoLines = line2.length > 0;
+  const { regular, bold } = await loadFonts();
 
-  const esc = (s: string) =>
-    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const element = h('div', {
+    style: {
+      width: '100%', height: '100%',
+      display: 'flex', flexDirection: 'column',
+      backgroundColor: '#F5F1EB',
+      padding: '0',
+      position: 'relative',
+    },
+  },
+    // Top green bar
+    h('div', { style: { width: '100%', height: 8, backgroundColor: '#2D6A4F' } }),
 
-  const yesBarWidth = Math.round((yesPct / 100) * 1080);
-  const noBarWidth  = 1080 - yesBarWidth;
-  const fontSize    = question.length > 70 ? 38 : question.length > 50 ? 44 : 52;
-  const qY1         = hasTwoLines ? 210 : 280;
-  const qY2         = qY1 + fontSize + 10;
-  const poolLabel   = pool > 0 ? `$${pool.toFixed(0)} pool · hunch.app` : 'hunch.app';
+    // Content area
+    h('div', {
+      style: {
+        flex: 1, display: 'flex', flexDirection: 'column',
+        padding: '44px 56px 44px 56px',
+      },
+    },
+      // Header row: Hunch + status
+      h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 } },
+        h('span', { style: { fontFamily: 'Inter', fontWeight: 700, fontSize: 36, color: '#2D6A4F', letterSpacing: '-0.5px' } }, 'Hunch'),
+        h('div', { style: { border: `1.5px solid ${statusColor}`, borderRadius: 2, padding: '4px 12px' } },
+          h('span', { style: { fontFamily: 'Inter', fontWeight: 700, fontSize: 13, color: statusColor, letterSpacing: '1px' } },
+            statusLabel.toUpperCase()
+          )
+        ),
+      ),
 
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
-  <rect width="1200" height="630" fill="#F5F1EB"/>
-  <rect width="1200" height="8" fill="#2D6A4F"/>
-  <text x="60" y="88" font-family="Georgia, serif" font-size="40" font-weight="700" fill="#2D6A4F" letter-spacing="-0.5">Hunch</text>
-  <rect x="${1200 - statusLabel.length * 11 - 84}" y="56" width="${statusLabel.length * 11 + 24}" height="30" rx="2" fill="none" stroke="${esc(statusColor)}" stroke-width="1.5"/>
-  <text x="${1200 - statusLabel.length * 11 / 2 - 72}" y="76" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="${esc(statusColor)}" text-anchor="middle" letter-spacing="1">${esc(statusLabel.toUpperCase())}</text>
-  <text x="60" y="${qY1}" font-family="Georgia, serif" font-size="${fontSize}" font-weight="700" fill="#1A1A1A">${esc(line1)}</text>
-  ${hasTwoLines ? `<text x="60" y="${qY2}" font-family="Georgia, serif" font-size="${fontSize}" font-weight="700" fill="#1A1A1A">${esc(line2)}</text>` : ''}
-  <text x="60" y="450" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#2D6A4F">${yesPct}% YES</text>
-  <text x="1140" y="450" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#A85252" text-anchor="end">${noPct}% NO</text>
-  <rect x="60" y="464" width="1080" height="10" rx="2" fill="#D6CFC4"/>
-  ${yesBarWidth > 0 ? `<rect x="60" y="464" width="${yesBarWidth}" height="10" rx="2" fill="#2D6A4F"/>` : ''}
-  ${noBarWidth > 0 ? `<rect x="${60 + yesBarWidth}" y="464" width="${noBarWidth}" height="10" rx="2" fill="#A85252"/>` : ''}
-  <text x="60" y="516" font-family="Arial, sans-serif" font-size="18" fill="#6B6259">${esc(poolLabel)}</text>
-  <rect y="620" width="1200" height="10" fill="#2D6A4F" opacity="0.15"/>
-</svg>`;
+      // Question
+      h('div', { style: { flex: 1, display: 'flex', alignItems: 'center' } },
+        h('span', {
+          style: {
+            fontFamily: 'Inter', fontWeight: 700, fontSize,
+            color: '#1A1A1A', lineHeight: 1.25,
+          },
+        }, question),
+      ),
 
-  try {
-    const png = await sharp(Buffer.from(svg)).png().toBuffer();
-    res.setHeader('Content-Type', 'image/png');
-    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
-    res.status(200).send(png);
-  } catch {
-    // Fallback to SVG if sharp fails
-    res.setHeader('Content-Type', 'image/svg+xml');
-    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
-    res.status(200).send(svg);
-  }
+      // Probability row
+      h('div', { style: { display: 'flex', justifyContent: 'space-between', marginBottom: 10 } },
+        h('span', { style: { fontFamily: 'Inter', fontWeight: 700, fontSize: 20, color: '#2D6A4F' } }, `${yesPct}% YES`),
+        h('span', { style: { fontFamily: 'Inter', fontWeight: 400, fontSize: 16, color: '#6B6259' } }, poolLabel),
+        h('span', { style: { fontFamily: 'Inter', fontWeight: 700, fontSize: 20, color: '#A85252' } }, `${noPct}% NO`),
+      ),
+
+      // Probability bar
+      h('div', { style: { display: 'flex', height: 10, borderRadius: 2, overflow: 'hidden', backgroundColor: '#D6CFC4' } },
+        h('div', { style: { width: `${yesPct}%`, backgroundColor: '#2D6A4F' } }),
+        h('div', { style: { width: `${noPct}%`, backgroundColor: '#A85252' } }),
+      ),
+    ),
+
+    // Bottom accent
+    h('div', { style: { width: '100%', height: 8, backgroundColor: '#2D6A4F', opacity: 0.15 } }),
+  );
+
+  const svg = await satori(element, {
+    width: 1200,
+    height: 630,
+    fonts: [
+      { name: 'Inter', data: regular, weight: 400, style: 'normal' },
+      { name: 'Inter', data: bold,    weight: 700, style: 'normal' },
+    ],
+  });
+
+  const png = await sharp(Buffer.from(svg)).png().toBuffer();
+  res.setHeader('Content-Type', 'image/png');
+  res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+  res.status(200).send(png);
 }
