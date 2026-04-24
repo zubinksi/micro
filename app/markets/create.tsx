@@ -207,7 +207,7 @@ export default function CreateMarketScreen() {
           style={styles.input}
           value={question}
           onChangeText={setQuestion}
-          placeholder="That this will happen..."
+          placeholder="Will this happen?"
           placeholderTextColor={COLORS.textDim}
           multiline
           maxLength={200}

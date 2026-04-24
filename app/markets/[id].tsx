@@ -250,8 +250,8 @@ export default function MarketDetailScreen() {
 
         {/* Meta */}
         <View style={styles.meta}>
-          {isResolving && resolution
-            ? <Text style={styles.metaItem}>Resolves {getResolveTime(resolution.created_at)}</Text>
+          {isResolving
+            ? <Text style={styles.metaItem}>Resolves {resolution ? getResolveTime(resolution.created_at) : 'soon'}</Text>
             : <Text style={styles.metaItem}>Closes {new Date(market.closes_at).toLocaleDateString()}</Text>
           }
           <Text style={styles.metaDot}>·</Text>
@@ -341,8 +341,8 @@ const styles = StyleSheet.create({
   center:         { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.bg },
   inner:          { padding: 20, paddingBottom: 40 },
   headerActions:  { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  shareBtn:       { paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: COLORS.primary, borderRadius: 4 },
-  shareBtnText:   { fontFamily: FONTS.sansBold, color: COLORS.primary, fontSize: 14 },
+  shareBtn:       { paddingHorizontal: 14, paddingVertical: 6, backgroundColor: COLORS.primary, borderRadius: 4, marginRight: 4 },
+  shareBtnText:   { fontFamily: FONTS.sansBold, color: '#fff', fontSize: 14 },
 
   statusTag:      { alignSelf: 'flex-start', borderWidth: 1, borderRadius: 2, paddingHorizontal: 8, paddingVertical: 3, marginBottom: 14 },
   statusTagText:  { fontSize: 10, fontFamily: FONTS.sansBold, letterSpacing: 1.2, textTransform: 'uppercase' },

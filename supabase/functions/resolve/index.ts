@@ -56,10 +56,12 @@ serve(async (req) => {
       return error(403, 'You are not authorized to resolve this market');
     }
 
-    // Write resolution and move market to 'resolving' (dispute window)
+    // Write resolution and move market to 'resolving' (dispute window).
+    // Upsert so re-submitting a resolution (e.g. changing the outcome) doesn't
+    // blow up on the unique constraint on market_id.
     const { error: rErr } = await supabase
       .from('resolutions')
-      .insert({ market_id, outcome, evidence_url, resolved_by: user.id });
+      .upsert({ market_id, outcome, evidence_url, resolved_by: user.id }, { onConflict: 'market_id' });
 
     if (rErr) return error(500, rErr.message);
 

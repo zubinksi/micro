@@ -130,7 +130,7 @@ function FeedHeader() {
           <Ionicons name="person-circle-outline" size={28} color={COLORS.textMuted} />
         </TouchableOpacity>
       </View>
-      <Text style={styles.tagline}>Talk is cheap</Text>
+      <Text style={styles.tagline}>Put five on it</Text>
     </View>
   );
 }
