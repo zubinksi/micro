@@ -33,8 +33,14 @@ Deno.serve(async (req) => {
   }
 
   const supabaseUrl  = Deno.env.get('SUPABASE_URL')!;
-  const serviceKey   = Deno.env.get('SERVICE_ROLE_KEY')!;
-  const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY')!;
+  const serviceKey   = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? Deno.env.get('SERVICE_ROLE_KEY')!;
+  const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
+
+  if (!anthropicKey) {
+    return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY secret is not set in Supabase — run: supabase secrets set ANTHROPIC_API_KEY=sk-ant-...' }), {
+      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  };
 
   const authHeader = req.headers.get('Authorization');
   if (!authHeader) {
@@ -168,13 +174,13 @@ Use UNCERTAIN only if the reference material is clearly insufficient to decide. 
     });
   }
 
-  const { error: rErr } = await admin.from('resolutions').insert({
+  const { error: rErr } = await admin.from('resolutions').upsert({
     market_id:    market.id,
     outcome,
     summary,
     evidence_url: urls.length > 0 ? urls.join(', ') : null,
     resolved_by:  market.creator_id,
-  });
+  }, { onConflict: 'market_id' });
 
   if (rErr) {
     return new Response(JSON.stringify({ error: rErr.message }), {

@@ -53,12 +53,17 @@ export default function MarketDetailScreen() {
     if (!id || !user) return;
     setAiResolving(true);
     setAiError('');
-    const { error } = await supabase.functions.invoke('resolve-ai', {
+    const { data, error } = await supabase.functions.invoke('resolve-ai', {
       body: { market_id: id },
     });
     setAiResolving(false);
     if (error) {
-      setAiError('Claude could not determine an outcome — try again or resolve manually.');
+      // Try to surface the specific error from the function body
+      let msg = 'AI resolution failed — try again or resolve manually.';
+      try { const body = await (error as any).context?.json?.(); if (body?.error) msg = body.error; } catch {}
+      setAiError(msg);
+    } else if (data?.outcome === 'UNCERTAIN') {
+      setAiError('Claude couldn\'t determine the outcome from available information — resolve manually.');
     } else {
       await fetchMarket();
     }
