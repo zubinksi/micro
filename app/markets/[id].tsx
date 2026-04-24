@@ -15,6 +15,9 @@ import { shareOutcomeCard, shareMarketLink } from '@/utils/share';
 import { ProbabilityBar } from '@/components/ProbabilityBar';
 import { StakeModal } from '@/components/StakeModal';
 import { ResolveModal } from '@/components/ResolveModal';
+import { AIJudgeStrip } from '@/components/AIJudgeStrip';
+import { AIResolutionCard } from '@/components/AIResolutionCard';
+import { SettleTabNotice } from '@/components/SettleTabNotice';
 import type { Outcome } from '@/lib/types';
 
 export default function MarketDetailScreen() {
@@ -151,6 +154,11 @@ export default function MarketDetailScreen() {
           <Text style={styles.poolNo}>NO ${odds.noPool.toFixed(0)}</Text>
         </View>
 
+        {/* AI Judge strip — open/locked AI markets before resolution */}
+        {market.resolver_type === 'ai' && (isOpen || isLocked) && !resolution && (
+          <AIJudgeStrip />
+        )}
+
         {/* My position */}
         {myPosition && (
           <View style={[styles.positionCard, myPosition.outcome === 'YES' ? styles.posYes : styles.posNo]}>
@@ -169,6 +177,11 @@ export default function MarketDetailScreen() {
           <TouchableOpacity style={styles.stakeBtn} onPress={() => setStakeModal(true)}>
             <Text style={styles.stakeBtnText}>Take a position</Text>
           </TouchableOpacity>
+        )}
+
+        {/* Settle tab notice — below stake button for open markets */}
+        {(isOpen || isLocked) && (
+          <SettleTabNotice />
         )}
 
         {/* Resolve CTAs */}
@@ -212,8 +225,16 @@ export default function MarketDetailScreen() {
           </View>
         )}
 
-        {/* Resolution card */}
-        {resolution && (
+        {/* AI Resolution card — settled AI markets with summary */}
+        {resolution && market.resolver_type === 'ai' && isSettled && resolution.summary && (
+          <AIResolutionCard
+            outcome={resolution.outcome as 'YES' | 'NO'}
+            summary={resolution.summary}
+          />
+        )}
+
+        {/* Standard resolution card — human-resolved or AI without summary */}
+        {resolution && !(market.resolver_type === 'ai' && isSettled && resolution.summary) && (
           <View style={styles.resolutionCard}>
             <Text style={styles.resTitle}>
               Resolved{' '}
