@@ -11,9 +11,9 @@ function getAppBaseUrl(): string {
 
 export async function shareMarketLink(market: Market) {
   const base  = getAppBaseUrl();
-  const ogUrl = `${base}/api/og?id=${market.id}`;
+  const ogUrl = `${base}/api/og?id=${market.id}&q=${encodeURIComponent(market.question)}`;
   await Share.share({
-    message: `"${market.question}"\nJoin the prediction on Hunch: ${ogUrl}`,
+    message: ogUrl,
     url:     ogUrl,
     title:   market.question,
   });

@@ -44,9 +44,10 @@ function esc(s: string) {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const id = req.query.id as string | undefined;
+  const id     = req.query.id as string | undefined;
+  const qParam = req.query.q  as string | undefined;
 
-  let question = 'A prediction on Hunch';
+  let question = qParam || 'A prediction on Hunch';
   let yesPct   = 50;
   let pool     = 0;
   let status   = 'open';

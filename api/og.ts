@@ -1,15 +1,20 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const id    = req.query.id as string | undefined;
-  const proto = (req.headers['x-forwarded-proto'] as string) ?? 'https';
-  const host  = req.headers.host as string;
-  const base  = `${proto}://${host}`;
+  const id     = req.query.id  as string | undefined;
+  const qParam = req.query.q   as string | undefined;
+  const proto  = (req.headers['x-forwarded-proto'] as string) ?? 'https';
+  const host   = req.headers.host as string;
+  const base   = `${proto}://${host}`;
 
-  let title       = 'Hunch — Prediction Markets';
+  // qParam is the question passed directly from the share function — use it
+  // immediately so we never fall back to the generic title.
+  let title       = qParam || 'Hunch — Prediction Markets';
   let description = 'Private prediction markets for your group chat.';
   const marketUrl = id ? `${base}/markets/${id}` : base;
-  const imageUrl  = id ? `${base}/api/og-image?id=${id}` : `${base}/api/og-image`;
+  const imageUrl  = id
+    ? `${base}/api/og-image?id=${id}&q=${encodeURIComponent(title)}`
+    : `${base}/api/og-image`;
 
   if (id) {
     try {
