@@ -30,12 +30,20 @@ serve(async (req) => {
 
     const { data: market } = await supabase
       .from('markets')
-      .select('id, group_id, creator_id, resolver_type, resolver_id, status')
+      .select('id, group_id, creator_id, resolver_type, resolver_id, status, closes_at')
       .eq('id', market_id)
       .single();
 
     if (!market) return error(404, 'Market not found');
-    if (!['locked', 'resolving'].includes(market.status)) return error(409, 'Market is not ready for resolution');
+
+    const isPastClose = market.closes_at && new Date(market.closes_at) < new Date();
+    if (!['locked', 'resolving'].includes(market.status) && !(market.status === 'open' && isPastClose)) {
+      return error(409, 'Market is not ready for resolution');
+    }
+    // Lock any open market that slipped through without a status transition
+    if (market.status === 'open') {
+      await supabase.from('markets').update({ status: 'locked' }).eq('id', market_id);
+    }
 
     // Authorization check: who can resolve?
     const isCreator  = market.creator_id === user.id;

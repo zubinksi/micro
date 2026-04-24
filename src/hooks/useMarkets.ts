@@ -126,6 +126,11 @@ export function useMarket(marketId: string | undefined, userId: string | undefin
     ]);
 
     if (m) {
+      // Auto-lock markets whose close date has passed but status wasn't updated
+      if (m.status === 'open' && new Date(m.closes_at) < new Date()) {
+        await supabase.from('markets').update({ status: 'locked' }).eq('id', m.id).eq('status', 'open');
+        m.status = 'locked';
+      }
       setMarket({ ...m, my_position: pos ?? null, resolution: res ?? null });
     }
     setLoading(false);
