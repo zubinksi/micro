@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
+import { DISPUTE_WINDOW_HOURS } from '@/lib/constants';
 import type { Market, Comment } from '@/lib/types';
 
 const MARKET_SELECT = `
@@ -130,6 +131,13 @@ export function useMarket(marketId: string | undefined, userId: string | undefin
       if (m.status === 'open' && new Date(m.closes_at) < new Date()) {
         await supabase.from('markets').update({ status: 'locked' }).eq('id', m.id).eq('status', 'open');
         m.status = 'locked';
+      }
+      // Auto-settle markets whose dispute window has closed (no cron job needed)
+      if (m.status === 'resolving' && res) {
+        const deadline = new Date(res.created_at).getTime() + DISPUTE_WINDOW_HOURS * 3600_000;
+        if (Date.now() > deadline) {
+          supabase.functions.invoke('settle').catch(() => {});
+        }
       }
       setMarket({ ...m, my_position: pos ?? null, resolution: res ?? null });
     }

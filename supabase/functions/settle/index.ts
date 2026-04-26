@@ -6,7 +6,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const DISPUTE_THRESHOLD = 0.5;   // >50% dispute votes → void
-const DISPUTE_WINDOW_MS = 48 * 3600_000;
+const DISPUTE_WINDOW_MS = 2 * 3600_000;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -18,7 +18,7 @@ serve(async (req) => {
 
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SERVICE_ROLE_KEY')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? Deno.env.get('SERVICE_ROLE_KEY')!,
   );
 
   // Find all 'resolving' markets past the dispute window
