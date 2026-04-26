@@ -214,6 +214,16 @@ export default function MarketDetailScreen() {
           )
         )}
 
+        {/* Post-resolve countdown — replaces resolve button once resolution exists */}
+        {isResolving && resolution && (
+          <View style={styles.resolveCountdown}>
+            <Ionicons name="time-outline" size={15} color={COLORS.primary} />
+            <Text style={styles.resolveCountdownText}>
+              Settles {getResolveTime(resolution.created_at)}
+            </Text>
+          </View>
+        )}
+
         {/* Invite strip */}
         {(isOpen || isLocked) && market.invite_code && (
           <View style={styles.inviteStrip}>
@@ -345,7 +355,7 @@ export default function MarketDetailScreen() {
 }
 
 function getResolveTime(resolutionCreatedAt: string): string {
-  const deadline = new Date(resolutionCreatedAt).getTime() + 48 * 3600_000;
+  const deadline = new Date(resolutionCreatedAt).getTime() + DISPUTE_WINDOW_HOURS * 3600_000;
   const diff     = deadline - Date.now();
   if (diff <= 0) return 'shortly';
   const hours = Math.floor(diff / 3600_000);
@@ -398,6 +408,9 @@ const styles = StyleSheet.create({
   resolveBtnText:      { fontFamily: FONTS.sansBold, color: COLORS.primary, fontSize: 15 },
   manualBtn:           { paddingVertical: 8, alignItems: 'center' },
   manualBtnText:       { fontFamily: FONTS.sans, color: COLORS.textDim, fontSize: 13 },
+
+  resolveCountdown:     { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 12, marginBottom: 8 },
+  resolveCountdownText: { fontFamily: FONTS.sansMedium, fontSize: 14, color: COLORS.primary },
 
   inviteStrip:    { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: COLORS.surface, borderRadius: 4, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: COLORS.border },
   inviteLabel:    { fontFamily: FONTS.sans, color: COLORS.textMuted, fontSize: 12 },

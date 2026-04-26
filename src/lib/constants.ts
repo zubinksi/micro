@@ -25,7 +25,7 @@ export const FONTS = {
 
 export const STAKE_MIN = 1;
 export const STAKE_MAX = 500;
-export const DISPUTE_WINDOW_HOURS = 48;
+export const DISPUTE_WINDOW_HOURS = 2;
 export const DISPUTE_THRESHOLD = 0.5;  // >50% dispute → void market
 
 export const MIN_PARTICIPANTS_TO_ACTIVATE = 2;  // need both YES and NO sides
