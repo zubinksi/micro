@@ -35,15 +35,15 @@ export function useResolve() {
     outcome: Outcome;
     evidenceUrl?: string;
   }) => {
-    // 1. Insert resolution record
+    // 1. Upsert resolution record (re-resolving after AI attempt must not fail on unique constraint)
     const { error: rErr } = await supabase
       .from('resolutions')
-      .insert({
+      .upsert({
         market_id:    params.marketId,
         outcome:      params.outcome,
         evidence_url: params.evidenceUrl ?? null,
         resolved_by:  params.userId,
-      });
+      }, { onConflict: 'market_id' });
     if (rErr) return { error: rErr };
 
     // 2. Move market to 'resolving' (48hr dispute window begins)
