@@ -35,24 +35,15 @@ export function useResolve() {
     outcome: Outcome;
     evidenceUrl?: string;
   }) => {
-    // 1. Upsert resolution record (re-resolving after AI attempt must not fail on unique constraint)
-    const { error: rErr } = await supabase
-      .from('resolutions')
-      .upsert({
+    // Route through the edge function so service-role key bypasses RLS on resolutions table.
+    const { error } = await supabase.functions.invoke('resolve', {
+      body: {
         market_id:    params.marketId,
         outcome:      params.outcome,
         evidence_url: params.evidenceUrl ?? null,
-        resolved_by:  params.userId,
-      }, { onConflict: 'market_id' });
-    if (rErr) return { error: rErr };
-
-    // 2. Move market to 'resolving' (48hr dispute window begins)
-    const { error: mErr } = await supabase
-      .from('markets')
-      .update({ status: 'resolving' })
-      .eq('id', params.marketId);
-
-    return { error: mErr };
+      },
+    });
+    return { error: error ?? null };
   }, []);
 
   const dispute = useCallback(async (resolutionId: string, userId: string, vote: Outcome) => {

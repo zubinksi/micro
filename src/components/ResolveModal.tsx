@@ -3,7 +3,7 @@ import {
   View, Text, Modal, TouchableOpacity, TextInput,
   StyleSheet, ActivityIndicator,
 } from 'react-native';
-import { COLORS, FONTS } from '@/lib/constants';
+import { COLORS, FONTS, DISPUTE_WINDOW_HOURS } from '@/lib/constants';
 import type { Market, Outcome } from '@/lib/types';
 
 interface Props {
@@ -69,7 +69,7 @@ export function ResolveModal({ market, onConfirm, onClose }: Props) {
 
         <View style={styles.warningBox}>
           <Text style={styles.warningText}>
-            Participants have 48 hours to dispute this resolution.
+            Participants have {DISPUTE_WINDOW_HOURS} hours to dispute this resolution.
             If &gt;50% dispute, stakes are returned.
           </Text>
         </View>
