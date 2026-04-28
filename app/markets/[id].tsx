@@ -187,8 +187,8 @@ export default function MarketDetailScreen() {
           <SettleTabNotice />
         )}
 
-        {/* Resolve CTAs */}
-        {(isLocked || isResolving) && canResolve && !resolution && (
+        {/* Resolve CTAs — only for locked markets; once resolving the button disappears */}
+        {isLocked && canResolve && !resolution && (
           market.resolver_type === 'ai' ? (
             <View style={styles.resolveWrap}>
               <TouchableOpacity
@@ -221,12 +221,14 @@ export default function MarketDetailScreen() {
           )
         )}
 
-        {/* Post-resolve countdown — replaces resolve button once resolution exists */}
-        {isResolving && resolution && (
+        {/* Post-resolve countdown */}
+        {isResolving && (
           <View style={styles.resolveCountdown}>
             <Ionicons name="time-outline" size={15} color={COLORS.primary} />
             <Text style={styles.resolveCountdownText}>
-              Settles {getResolveTime(resolution.created_at)}
+              {resolution
+                ? `Settles ${getResolveTime(resolution.created_at)}`
+                : 'Resolution submitted — settling soon'}
             </Text>
           </View>
         )}
