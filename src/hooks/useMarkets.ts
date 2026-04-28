@@ -118,28 +118,40 @@ export function useMarket(marketId: string | undefined, userId: string | undefin
   const fetchMarket = useCallback(async () => {
     if (!marketId) return;
 
-    const [{ data: m }, { data: pos }, { data: res }] = await Promise.all([
+    const [{ data: m }, { data: pos }, resResult] = await Promise.all([
       supabase.from('markets').select(MARKET_SELECT).eq('id', marketId).single(),
       userId
         ? supabase.from('positions').select('*').eq('market_id', marketId).eq('user_id', userId).maybeSingle()
         : Promise.resolve({ data: null }),
-      supabase.from('resolutions').select('*, resolver:profiles(*), dispute_votes(*, profile:profiles(*))').eq('market_id', marketId).maybeSingle(),
+      supabase.from('resolutions').select('*, resolver:profiles(*)').eq('market_id', marketId).maybeSingle(),
     ]);
 
+    if (resResult.error) console.error('[fetchMarket] resolutions error:', resResult.error);
+
+    // Fetch dispute votes separately so a missing RLS policy on that table
+    // doesn't silently kill the whole resolution read.
+    let res = resResult.data ?? null;
+    if (res) {
+      const { data: votes, error: vErr } = await supabase
+        .from('dispute_votes')
+        .select('*, profile:profiles(*)')
+        .eq('resolution_id', res.id);
+      if (vErr) console.error('[fetchMarket] dispute_votes error:', vErr);
+      res = { ...res, dispute_votes: votes ?? [] };
+    }
+
     if (m) {
-      // Auto-lock markets whose close date has passed but status wasn't updated
       if (m.status === 'open' && new Date(m.closes_at) < new Date()) {
         await supabase.from('markets').update({ status: 'locked' }).eq('id', m.id).eq('status', 'open');
         m.status = 'locked';
       }
-      // Auto-settle markets whose dispute window has closed (no cron job needed)
       if (m.status === 'resolving' && res) {
         const deadline = new Date(res.created_at).getTime() + DISPUTE_WINDOW_HOURS * 3600_000;
         if (Date.now() > deadline) {
           supabase.functions.invoke('settle').catch(() => {});
         }
       }
-      setMarket({ ...m, my_position: pos ?? null, resolution: res ?? null });
+      setMarket({ ...m, my_position: pos ?? null, resolution: res });
     }
     setLoading(false);
   }, [marketId, userId]);
