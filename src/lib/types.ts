@@ -50,6 +50,8 @@ export interface Market {
   my_position?: Position | null;
   position_count?: number;
   comment_count?: number;
+  top_bettors?: Profile[];
+  positions?: Position[];
   resolution?: Resolution | null;
 }
 

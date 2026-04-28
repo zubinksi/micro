@@ -27,30 +27,36 @@ export function useGroupMarkets(groupId: string | undefined, userId: string | un
 
     const ids = rawMarkets.map(m => m.id);
 
-    // Fetch user's own positions
-    const { data: myPositions } = await supabase
-      .from('positions')
-      .select('*')
-      .in('market_id', ids)
-      .eq('user_id', userId);
+    // Fetch all positions (own + others for avatar circles + counts)
+    const [{ data: allPositions }, { data: resolutions }] = await Promise.all([
+      supabase
+        .from('positions')
+        .select('market_id, user_id, outcome, stake, profile:profiles(id, username, display_name, avatar_url)')
+        .in('market_id', ids),
+      supabase.from('resolutions').select('*').in('market_id', ids),
+    ]);
 
     const posMap: Record<string, any> = {};
-    (myPositions ?? []).forEach(p => { posMap[p.market_id] = p; });
-
-    // Fetch resolutions
-    const { data: resolutions } = await supabase
-      .from('resolutions')
-      .select('*')
-      .in('market_id', ids);
+    const allPosMap: Record<string, any[]> = {};
+    (allPositions ?? []).forEach(p => {
+      if (p.user_id === userId) posMap[p.market_id] = p;
+      if (!allPosMap[p.market_id]) allPosMap[p.market_id] = [];
+      allPosMap[p.market_id].push(p);
+    });
 
     const resMap: Record<string, any> = {};
     (resolutions ?? []).forEach(r => { resMap[r.market_id] = r; });
 
-    const enriched: Market[] = rawMarkets.map(m => ({
-      ...m,
-      my_position: posMap[m.id] ?? null,
-      resolution: resMap[m.id] ?? null,
-    }));
+    const enriched: Market[] = rawMarkets.map(m => {
+      const mPos = allPosMap[m.id] ?? [];
+      return {
+        ...m,
+        my_position: posMap[m.id] ?? null,
+        resolution: resMap[m.id] ?? null,
+        position_count: mPos.length,
+        top_bettors: mPos.slice(0, 4).map((p: any) => p.profile).filter(Boolean),
+      };
+    });
 
     setMarkets(enriched);
     setLoading(false);
@@ -118,12 +124,16 @@ export function useMarket(marketId: string | undefined, userId: string | undefin
   const fetchMarket = useCallback(async () => {
     if (!marketId) return;
 
-    const [{ data: m }, { data: pos }, resResult] = await Promise.all([
+    const [{ data: m }, { data: pos }, resResult, { data: allPos }] = await Promise.all([
       supabase.from('markets').select(MARKET_SELECT).eq('id', marketId).single(),
       userId
         ? supabase.from('positions').select('*').eq('market_id', marketId).eq('user_id', userId).maybeSingle()
         : Promise.resolve({ data: null }),
       supabase.from('resolutions').select('*, resolver:profiles(*)').eq('market_id', marketId).maybeSingle(),
+      supabase.from('positions')
+        .select('*, profile:profiles(id, username, display_name, avatar_url)')
+        .eq('market_id', marketId)
+        .order('filled_at', { ascending: true }),
     ]);
 
     if (resResult.error) console.error('[fetchMarket] resolutions error:', resResult.error);
@@ -151,7 +161,7 @@ export function useMarket(marketId: string | undefined, userId: string | undefin
           supabase.functions.invoke('settle').catch(() => {});
         }
       }
-      setMarket({ ...m, my_position: pos ?? null, resolution: res });
+      setMarket({ ...m, my_position: pos ?? null, resolution: res, positions: allPos ?? [] });
     }
     setLoading(false);
   }, [marketId, userId]);

@@ -310,24 +310,49 @@ export default function MarketDetailScreen() {
           </Text>
         </View>
 
-        {/* Comments */}
-        <Text style={styles.commentsTitle}>Comments ({comments.length})</Text>
-        {comments.map(c => (
-          <View key={c.id} style={styles.commentRow}>
-            <View style={styles.commentMeta}>
-              <Text style={styles.commentUser}>@{c.profile?.username}</Text>
-              <Text style={styles.commentTime}>
-                {new Date(c.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </Text>
-              {c.user_id === user?.id && (
-                <TouchableOpacity onPress={() => deleteComment(c.id)}>
-                  <Ionicons name="trash-outline" size={13} color={COLORS.textDim} />
-                </TouchableOpacity>
-              )}
-            </View>
-            <Text style={styles.commentContent}>{c.content}</Text>
-          </View>
-        ))}
+        {/* Activity feed — bets + comments interleaved */}
+        {(() => {
+          const bets = (market.positions ?? []).map(p => ({ type: 'bet' as const, id: p.id, ts: p.filled_at, data: p }));
+          const msgs = comments.map(c => ({ type: 'comment' as const, id: c.id, ts: c.created_at, data: c }));
+          const feed = [...bets, ...msgs].sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
+          return (
+            <>
+              <Text style={styles.commentsTitle}>Activity ({feed.length})</Text>
+              {feed.map(item => item.type === 'bet' ? (
+                <View key={`bet-${item.id}`} style={styles.betRow}>
+                  <View style={[styles.betOutcomeDot, item.data.outcome === 'YES' ? styles.dotYes : styles.dotNo]} />
+                  <View style={styles.betBody}>
+                    <View style={styles.commentMeta}>
+                      <Text style={styles.commentUser}>@{item.data.profile?.username}</Text>
+                      <Text style={styles.commentTime}>{fmtTime(item.ts)}</Text>
+                    </View>
+                    <Text style={styles.betLine}>
+                      bet{' '}
+                      <Text style={item.data.outcome === 'YES' ? styles.yesText : styles.noText}>
+                        {item.data.outcome}
+                      </Text>
+                      {' · '}
+                      <Text style={styles.betAmount}>${item.data.stake}</Text>
+                    </Text>
+                  </View>
+                </View>
+              ) : (
+                <View key={`comment-${item.id}`} style={styles.commentRow}>
+                  <View style={styles.commentMeta}>
+                    <Text style={styles.commentUser}>@{item.data.profile?.username}</Text>
+                    <Text style={styles.commentTime}>{fmtTime(item.ts)}</Text>
+                    {item.data.user_id === user?.id && (
+                      <TouchableOpacity onPress={() => deleteComment(item.data.id)}>
+                        <Ionicons name="trash-outline" size={13} color={COLORS.textDim} />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                  <Text style={styles.commentContent}>{item.data.content}</Text>
+                </View>
+              ))}
+            </>
+          );
+        })()}
       </ScrollView>
 
       {/* Comment input */}
@@ -364,6 +389,10 @@ export default function MarketDetailScreen() {
       )}
     </KeyboardAvoidingView>
   );
+}
+
+function fmtTime(ts: string): string {
+  return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
 function getResolveTime(resolutionCreatedAt: string): string {
@@ -454,11 +483,18 @@ const styles = StyleSheet.create({
   metaDot:        { color: COLORS.textDim, fontSize: 12 },
 
   commentsTitle:  { fontFamily: FONTS.sansBold, fontSize: 15, color: COLORS.text, marginBottom: 12 },
-  commentRow:     { marginBottom: 12, padding: 12, backgroundColor: COLORS.surface, borderRadius: 4, borderWidth: 1, borderColor: COLORS.border },
+  commentRow:     { marginBottom: 8, padding: 12, backgroundColor: COLORS.surface, borderRadius: 8, borderWidth: 1, borderColor: COLORS.border },
   commentMeta:    { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
   commentUser:    { fontFamily: FONTS.sansMedium, color: COLORS.primary, fontSize: 13 },
   commentTime:    { fontFamily: FONTS.sans, color: COLORS.textDim, fontSize: 11, flex: 1 },
   commentContent: { fontFamily: FONTS.sans, color: COLORS.text, fontSize: 14, lineHeight: 20 },
+  betRow:         { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 8, padding: 12, backgroundColor: COLORS.surface, borderRadius: 8, borderWidth: 1, borderColor: COLORS.border },
+  betOutcomeDot:  { width: 8, height: 8, borderRadius: 4, marginTop: 5 },
+  dotYes:         { backgroundColor: COLORS.yes },
+  dotNo:          { backgroundColor: COLORS.no },
+  betBody:        { flex: 1 },
+  betLine:        { fontFamily: FONTS.sans, fontSize: 13, color: COLORS.text },
+  betAmount:      { fontFamily: FONTS.sansBold },
 
   commentInputWrap: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderTopWidth: 1, borderTopColor: COLORS.border, backgroundColor: COLORS.surface },
   commentField:     { flex: 1, fontFamily: FONTS.sans, color: COLORS.text, fontSize: 14 },
