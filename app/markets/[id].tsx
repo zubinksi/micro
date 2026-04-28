@@ -35,6 +35,7 @@ export default function MarketDetailScreen() {
   const [disputeError, setDisputeError] = useState('');
   const [aiResolving,  setAiResolving]  = useState(false);
   const [aiError,      setAiError]      = useState('');
+  const [aiResult,     setAiResult]     = useState<{ outcome: 'YES' | 'NO'; summary: string } | null>(null);
 
   const handleStake = useCallback(async (outcome: Outcome, amount: number) => {
     if (!user || !id) return;
@@ -70,7 +71,8 @@ export default function MarketDetailScreen() {
       setAiError(msg);
     } else if (data?.outcome === 'UNCERTAIN') {
       setAiError(data.message ?? 'Claude couldn\'t determine the outcome — add a reference URL to the market or resolve manually.');
-    } else {
+    } else if (data?.outcome === 'YES' || data?.outcome === 'NO') {
+      setAiResult({ outcome: data.outcome, summary: data.summary ?? '' });
       await fetchMarket();
     }
   }, [id, user, fetchMarket]);
@@ -244,11 +246,12 @@ export default function MarketDetailScreen() {
           </View>
         )}
 
-        {/* AI Resolution card — settled AI markets with summary */}
-        {resolution && market.resolver_type === 'ai' && isSettled && resolution.summary && (
+        {/* AI Resolution card — from live function response (before RLS lets us read it back),
+            or from DB once settled */}
+        {market.resolver_type === 'ai' && (aiResult || (resolution && resolution.summary)) && (
           <AIResolutionCard
-            outcome={resolution.outcome as 'YES' | 'NO'}
-            summary={resolution.summary}
+            outcome={(aiResult?.outcome ?? resolution?.outcome) as 'YES' | 'NO'}
+            summary={aiResult?.summary ?? resolution?.summary ?? ''}
           />
         )}
 
