@@ -61,12 +61,15 @@ export default function MarketDetailScreen() {
     });
     setAiResolving(false);
     if (error) {
-      // Try to surface the specific error from the function body
-      let msg = 'AI resolution failed — try again or resolve manually.';
-      try { const body = await (error as any).context?.json?.(); if (body?.error) msg = body.error; } catch {}
+      let msg = error.message || 'AI resolution failed — try again or resolve manually.';
+      try {
+        const body = await (error as any).context?.json?.();
+        if (body?.error) msg = body.error;
+      } catch {}
+      console.error('[resolve-ai]', msg, error);
       setAiError(msg);
     } else if (data?.outcome === 'UNCERTAIN') {
-      setAiError('Claude couldn\'t determine the outcome from available information — resolve manually.');
+      setAiError(data.message ?? 'Claude couldn\'t determine the outcome — add a reference URL to the market or resolve manually.');
     } else {
       await fetchMarket();
     }
@@ -205,7 +208,11 @@ export default function MarketDetailScreen() {
               <TouchableOpacity style={styles.manualBtn} onPress={() => setResolveModal(true)}>
                 <Text style={styles.manualBtnText}>Override manually instead</Text>
               </TouchableOpacity>
-              {aiError ? <Text style={styles.error}>{aiError}</Text> : null}
+              {aiError ? (
+                <View style={styles.aiErrorBox}>
+                  <Text style={styles.aiErrorText}>{aiError}</Text>
+                </View>
+              ) : null}
             </View>
           ) : (
             <TouchableOpacity style={styles.resolveBtn} onPress={() => setResolveModal(true)}>
@@ -434,6 +441,8 @@ const styles = StyleSheet.create({
   disputeVoted:   { fontFamily: FONTS.sans, color: COLORS.textMuted, fontSize: 13, marginTop: 10 },
 
   error:          { fontFamily: FONTS.sans, color: COLORS.no, fontSize: 13, marginTop: 8 },
+  aiErrorBox:     { backgroundColor: COLORS.noLight, borderWidth: 1, borderColor: COLORS.no + '50', borderRadius: 8, padding: 12, marginTop: 8 },
+  aiErrorText:    { fontFamily: FONTS.sans, color: COLORS.no, fontSize: 13, lineHeight: 19 },
 
   meta:           { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 24, alignItems: 'center' },
   metaItem:       { fontFamily: FONTS.sans, color: COLORS.textDim, fontSize: 12 },
