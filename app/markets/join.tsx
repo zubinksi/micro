@@ -21,21 +21,23 @@ export default function JoinMarketScreen() {
     setLoading(true);
     setError('');
 
-    const { data: market, error: mErr } = await supabase
-      .from('markets')
-      .select('id, question, status')
-      .eq('invite_code', trimmed)
-      .single();
+    const { data: rows, error: mErr } = await supabase
+      .rpc('find_market_by_invite_code', { code: trimmed });
 
+    const market = rows?.[0];
     if (mErr || !market) {
       setError('Invalid invite code. Double-check and try again.');
       setLoading(false);
       return;
     }
 
-    const { error: joinErr } = await supabase
-      .from('market_members')
-      .insert({ market_id: market.id, user_id: user.id });
+    // Add to market_members (for market-level access) and group_members (for feed)
+    const [{ error: joinErr }] = await Promise.all([
+      supabase.from('market_members').insert({ market_id: market.id, user_id: user.id }),
+      market.group_id
+        ? supabase.from('group_members').insert({ group_id: market.group_id, user_id: user.id })
+        : Promise.resolve({ error: null }),
+    ]);
 
     setLoading(false);
 
