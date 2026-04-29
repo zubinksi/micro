@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  FlatList, ActivityIndicator, Share as NativeShare, Clipboard, Platform,
+  FlatList, ActivityIndicator, Share as NativeShare, Platform,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@/hooks/useAuth';
@@ -46,7 +46,6 @@ export default function ShareScreen() {
   const [inviteCode, setInviteCode] = useState('');
   const [friends,    setFriends]    = useState<Friend[]>([]);
   const [loading,    setLoading]    = useState(true);
-  const [copied,     setCopied]     = useState(false);
   const [invitedIds, setInvitedIds] = useState<Set<string>>(new Set());
 
   const shareUrl = `${getAppBaseUrl()}/api/og?id=${id}`;
@@ -90,10 +89,11 @@ export default function ShareScreen() {
     load();
   }, [id, user?.id]);
 
-  const handleCopyLink = () => {
-    Clipboard.setString(shareUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleShareLink = async () => {
+    await NativeShare.share({
+      message: `${question}\n${shareUrl}`,
+      url: shareUrl,
+    });
   };
 
   const handleInvite = async (friend: Friend) => {
@@ -145,10 +145,8 @@ export default function ShareScreen() {
           <Text style={styles.sectionLabel}>SHARE LINK</Text>
           <View style={styles.linkRow}>
             <Text style={styles.linkText} numberOfLines={1}>{shareUrl}</Text>
-            <TouchableOpacity style={[styles.copyBtn, copied && styles.copyBtnDone]} onPress={handleCopyLink}>
-              <Text style={[styles.copyBtnText, copied && styles.copyBtnTextDone]}>
-                {copied ? '✓ Copied' : 'Copy'}
-              </Text>
+            <TouchableOpacity style={styles.copyBtn} onPress={handleShareLink}>
+              <Text style={styles.copyBtnText}>Share</Text>
             </TouchableOpacity>
           </View>
 
@@ -209,9 +207,7 @@ const styles = StyleSheet.create({
   linkRow:            { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surface, borderRadius: 14, padding: 14, gap: 10, marginBottom: 4 },
   linkText:           { flex: 1, fontFamily: FONTS.sans, fontSize: 13, color: COLORS.textMuted },
   copyBtn:            { backgroundColor: COLORS.primary, borderRadius: 99, paddingVertical: 6, paddingHorizontal: 14 },
-  copyBtnDone:        { backgroundColor: COLORS.yes },
   copyBtnText:        { fontFamily: FONTS.sansBold, color: '#fff', fontSize: 13 },
-  copyBtnTextDone:    { color: '#fff' },
 
   friendRow:          { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: COLORS.surface, borderRadius: 16, padding: 14, marginBottom: 10, borderWidth: 1.5, borderColor: COLORS.border },
   friendRowInvited:   { borderColor: COLORS.primary + '50' },

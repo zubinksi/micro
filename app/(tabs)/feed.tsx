@@ -117,17 +117,12 @@ function FeedHeader({ activeBets }: { activeBets: number }) {
           <Ionicons name="person-circle-outline" size={28} color={COLORS.textMuted} />
         </TouchableOpacity>
       </View>
-      <Text style={styles.tagline}>Put five on it</Text>
 
       <View style={styles.balanceCard}>
         <View>
           <Text style={styles.balanceLabel}>YOUR BETS</Text>
           <Text style={styles.balanceValue}>{activeBets} active</Text>
         </View>
-        <TouchableOpacity style={styles.joinChip} onPress={() => router.push('/markets/join')}>
-          <Ionicons name="enter-outline" size={14} color={COLORS.primary} />
-          <Text style={styles.joinChipText}>Join</Text>
-        </TouchableOpacity>
       </View>
 
       <Text style={styles.sectionLabel}>YOUR BETS</Text>
@@ -143,7 +138,6 @@ const styles = StyleSheet.create({
   headerRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 },
   logo:         { fontFamily: FONTS.serif, fontSize: 32, color: COLORS.text },
   profileBtn:   { padding: 4 },
-  tagline:      { fontFamily: FONTS.sans, fontSize: 13, color: COLORS.textMuted, marginBottom: 16 },
 
   balanceCard:  {
     backgroundColor: COLORS.surface,
@@ -161,8 +155,6 @@ const styles = StyleSheet.create({
   },
   balanceLabel: { fontFamily: FONTS.sansBold, fontSize: 10, color: COLORS.textDim, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 },
   balanceValue: { fontFamily: FONTS.sansBold, fontSize: 28, color: COLORS.text },
-  joinChip:     { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: COLORS.primary, borderRadius: 99, paddingVertical: 8, paddingHorizontal: 16 },
-  joinChipText: { fontFamily: FONTS.sansBold, color: COLORS.primary, fontSize: 14 },
 
   sectionLabel: { fontFamily: FONTS.sansBold, fontSize: 11, color: COLORS.textMuted, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 },
 

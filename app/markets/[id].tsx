@@ -343,10 +343,7 @@ export default function MarketDetailScreen() {
             <>
               <Text style={styles.commentsTitle}>Activity ({feed.length})</Text>
               {feed.map(item => {
-                const profile  = item.data.profile;
-                const name     = profile?.display_name ?? profile?.username ?? 'User';
-                const initials = name.slice(0, 2).toUpperCase();
-                const uid      = item.data.user_id ?? '';
+                const username = item.data.profile?.username ?? 'user';
 
                 if (item.type === 'bet') {
                   const isYes = item.data.outcome === 'YES';
@@ -355,10 +352,7 @@ export default function MarketDetailScreen() {
                       <View style={[styles.betAccent, isYes ? styles.accentYes : styles.accentNo]} />
                       <View style={styles.activityInner}>
                         <View style={styles.activityMeta}>
-                          <View style={[styles.activityAvatar, { backgroundColor: avatarColor(uid) }]}>
-                            <Text style={styles.activityAvatarText}>{initials}</Text>
-                          </View>
-                          <Text style={styles.activityName}>{name}</Text>
+                          <Text style={styles.activityName}>@{username}</Text>
                           <Text style={styles.activityTime}>{fmtTime(item.ts)}</Text>
                         </View>
                         <View style={styles.betDetails}>
@@ -379,12 +373,8 @@ export default function MarketDetailScreen() {
                   <View key={`comment-${item.id}`} style={styles.activityCard}>
                     <View style={styles.activityInner}>
                       <View style={styles.activityMeta}>
-                        <View style={[styles.activityAvatar, { backgroundColor: avatarColor(uid) }]}>
-                          <Text style={styles.activityAvatarText}>{initials}</Text>
-                        </View>
-                        <Text style={styles.activityName}>{name}</Text>
+                        <Text style={styles.activityName}>@{username}</Text>
                         <Text style={styles.activityTime}>{fmtTime(item.ts)}</Text>
-                        <Text style={styles.commentBubble}>💬</Text>
                         {item.data.user_id === user?.id && (
                           <TouchableOpacity onPress={() => deleteComment(item.data.id)}>
                             <Ionicons name="trash-outline" size={13} color={COLORS.textDim} />
@@ -552,11 +542,8 @@ const styles = StyleSheet.create({
   accentNo:           { backgroundColor: COLORS.no },
   activityInner:      { flex: 1, padding: 12 },
   activityMeta:       { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 7 },
-  activityAvatar:     { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
-  activityAvatarText: { fontFamily: FONTS.sansBold, fontSize: 11, color: COLORS.text },
   activityName:       { fontFamily: FONTS.sansBold, fontSize: 13, color: COLORS.text },
   activityTime:       { flex: 1, fontFamily: FONTS.sans, fontSize: 11, color: COLORS.textDim },
-  commentBubble:      { fontSize: 13 },
 
   betDetails:         { flexDirection: 'row', alignItems: 'center', gap: 6 },
   betLabel:           { fontFamily: FONTS.sans, fontSize: 13, color: COLORS.textMuted },
