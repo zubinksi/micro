@@ -59,8 +59,8 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="markets/create" options={{ title: 'New Bet', presentation: 'modal', headerTitleAlign: 'center' }} />
         <Stack.Screen name="markets/join"   options={{ title: 'Join Market', presentation: 'modal', headerTitleAlign: 'center' }} />
-        <Stack.Screen name="markets/[id]"   options={{ title: '' }} />
-        <Stack.Screen name="markets/share"  options={{ title: '', presentation: 'modal', headerShown: false }} />
+        <Stack.Screen name="markets/[id]"   options={{ title: 'Market' }} />
+        <Stack.Screen name="markets/share"  options={{ title: 'Share Bet', headerTitleAlign: 'center' }} />
         <Stack.Screen name="profile"        options={{ title: 'Profile', headerTitleAlign: 'center' }} />
       </Stack>
     </>

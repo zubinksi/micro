@@ -1,24 +1,38 @@
 import { useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, Clipboard,
+  TextInput, KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
-import { useLocalSearchParams, Stack } from 'expo-router';
+import { useLocalSearchParams, Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
 import { useMarket, useComments } from '@/hooks/useMarkets';
 import { useStake, useResolve } from '@/hooks/usePositions';
 import { supabase } from '@/lib/supabase';
-import { COLORS, FONTS, STAKE_MIN, STAKE_MAX, DISPUTE_WINDOW_HOURS } from '@/lib/constants';
+import { COLORS, FONTS, DISPUTE_WINDOW_HOURS } from '@/lib/constants';
 import { getPoolOdds } from '@/utils/pool';
-import { shareOutcomeCard, shareMarketLink } from '@/utils/share';
-import { ProbabilityBar } from '@/components/ProbabilityBar';
 import { StakeModal } from '@/components/StakeModal';
 import { ResolveModal } from '@/components/ResolveModal';
 import { AIJudgeStrip } from '@/components/AIJudgeStrip';
 import { AIResolutionCard } from '@/components/AIResolutionCard';
 import { SettleTabNotice } from '@/components/SettleTabNotice';
 import type { Outcome } from '@/lib/types';
+
+const AVATAR_COLORS = ['#C8D8C0', '#C0CCD8', '#D8CCC0', '#D0C0D8', '#C0D4D0', '#D8C8C0'];
+function avatarColor(id: string) {
+  let h = 0; for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0;
+  return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length];
+}
+function getTimeLeft(closesAt: string) {
+  const diff = new Date(closesAt).getTime() - Date.now();
+  if (diff <= 0) return 'Closed';
+  const days  = Math.floor(diff / 86400_000);
+  const hours = Math.floor((diff % 86400_000) / 3600_000);
+  const mins  = Math.floor((diff % 3600_000) / 60_000);
+  if (days > 1) return `${days}d`;
+  if (hours > 0) return `${hours}h`;
+  return `${mins}m`;
+}
 
 export default function MarketDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -98,6 +112,8 @@ export default function MarketDetailScreen() {
   }
 
   const odds        = getPoolOdds(market);
+  const yesPct      = odds.totalPool === 0 ? 50 : Math.round(odds.yesProb * 100);
+  const noPct       = 100 - yesPct;
   const myPosition  = market.my_position;
   const resolution  = market.resolution;
   const isOpen      = market.status === 'open';
@@ -118,46 +134,64 @@ export default function MarketDetailScreen() {
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Stack.Screen options={{
-        title: '',
+        title: 'Market',
+        headerShadowVisible: true,
+        headerLeft: () => (
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+            <Ionicons name="chevron-back" size={20} color={COLORS.text} />
+          </TouchableOpacity>
+        ),
         headerRight: () => (
-          <View style={styles.headerActions}>
-            {market.invite_code && (
-              <TouchableOpacity style={styles.shareBtn} onPress={() => shareMarketLink(market)}>
-                <Text style={styles.shareBtnText}>Share</Text>
-              </TouchableOpacity>
-            )}
-            {isSettled && myPosition && (
-              <TouchableOpacity
-                style={styles.shareBtn}
-                onPress={() => shareOutcomeCard(market, myPosition, resolution?.outcome === myPosition.outcome)}
-              >
-                <Text style={styles.shareBtnText}>Share</Text>
-              </TouchableOpacity>
-            )}
-          </View>
+          <TouchableOpacity
+            style={styles.shareBtn}
+            onPress={() => router.push(`/markets/share?id=${id}&outcome=${myPosition?.outcome ?? ''}&stake=${myPosition?.stake ?? ''}`)}
+          >
+            <Text style={styles.shareBtnText}>Share</Text>
+          </TouchableOpacity>
         ),
       }} />
 
       <ScrollView contentContainerStyle={styles.inner}>
 
-        {/* Status tag */}
-        <View style={[styles.statusTag, { borderColor: statusColor }]}>
-          <Text style={[styles.statusTagText, { color: statusColor }]}>
-            {market.status.toUpperCase()}
-          </Text>
+        {/* Market summary card */}
+        <View style={styles.marketCard}>
+          <View style={[styles.statusPill, { borderColor: statusColor }]}>
+            <Text style={[styles.statusPillText, { color: statusColor }]}>
+              {market.status.toUpperCase()}
+            </Text>
+          </View>
+
+          <Text style={styles.question}>{market.question}</Text>
+
+          <View style={styles.creatorRow}>
+            <View style={[styles.creatorAvatar, { backgroundColor: avatarColor(market.creator_id) }]}>
+              <Text style={styles.creatorInitials}>
+                {(market.creator?.display_name ?? market.creator?.username ?? '??').slice(0, 2).toUpperCase()}
+              </Text>
+            </View>
+            <Text style={styles.creatorText}>
+              by <Text style={styles.creatorBold}>{market.creator?.display_name ?? market.creator?.username}</Text>
+              {' · '}{getTimeLeft(market.closes_at)} left
+            </Text>
+          </View>
+
+          <View style={styles.oddsRow}>
+            <Text style={styles.yesLabel}>YES {yesPct}%</Text>
+            <Text style={styles.noLabel}>NO {noPct}%</Text>
+          </View>
+          <View style={styles.barTrack}>
+            <View style={[styles.barYes, { flex: yesPct }]} />
+            <View style={[styles.barNo,  { flex: noPct }]} />
+          </View>
+
+          <View style={styles.poolRow}>
+            <Text style={styles.poolSide}>${odds.yesPool.toFixed(0)} on YES</Text>
+            <Text style={styles.poolCenter}>${odds.totalPool.toFixed(0)} total pot</Text>
+            <Text style={styles.poolSide}>${odds.noPool.toFixed(0)} on NO</Text>
+          </View>
         </View>
 
-        {/* Question — serif */}
-        <Text style={styles.question}>{market.question}</Text>
         <Text style={styles.criteria}>{market.resolution_criteria}</Text>
-
-        {/* Probability */}
-        <ProbabilityBar odds={odds} />
-        <View style={styles.poolRow}>
-          <Text style={styles.poolYes}>YES ${odds.yesPool.toFixed(0)}</Text>
-          <Text style={styles.poolTotal}>${odds.totalPool.toFixed(0)} total</Text>
-          <Text style={styles.poolNo}>NO ${odds.noPool.toFixed(0)}</Text>
-        </View>
 
         {/* AI Judge strip — open/locked AI markets before resolution */}
         {market.resolver_type === 'ai' && (isOpen || isLocked) && !resolution && (
@@ -235,16 +269,6 @@ export default function MarketDetailScreen() {
           </View>
         )}
 
-        {/* Invite strip */}
-        {(isOpen || isLocked) && market.invite_code && (
-          <View style={styles.inviteStrip}>
-            <Text style={styles.inviteLabel}>Invite code</Text>
-            <Text style={styles.inviteCode}>{market.invite_code}</Text>
-            <TouchableOpacity onPress={() => Clipboard.setString(market.invite_code!)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Ionicons name="copy-outline" size={16} color={COLORS.primary} />
-            </TouchableOpacity>
-          </View>
-        )}
 
         {/* AI Resolution card — from live function response (before RLS lets us read it back),
             or from DB once settled */}
@@ -416,21 +440,32 @@ const STATUS_COLOR: Record<string, string> = {
 const styles = StyleSheet.create({
   container:      { flex: 1, backgroundColor: COLORS.bg },
   center:         { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.bg },
-  inner:          { padding: 20, paddingBottom: 40 },
-  headerActions:  { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  shareBtn:       { paddingHorizontal: 14, paddingVertical: 6, backgroundColor: COLORS.warning, borderRadius: 99, marginRight: 4 },
+  inner:          { padding: 16, paddingBottom: 40 },
+
+  backBtn:        { width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.surfaceAlt, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
+  shareBtn:       { paddingHorizontal: 18, paddingVertical: 8, backgroundColor: COLORS.warning, borderRadius: 99, marginRight: 16 },
   shareBtnText:   { fontFamily: FONTS.sansBold, color: '#1A1A1A', fontSize: 14 },
 
-  statusTag:      { alignSelf: 'flex-start', borderWidth: 1, borderRadius: 99, paddingHorizontal: 10, paddingVertical: 3, marginBottom: 14 },
-  statusTagText:  { fontSize: 10, fontFamily: FONTS.sansBold, letterSpacing: 1.2, textTransform: 'uppercase' },
+  marketCard:     { backgroundColor: COLORS.surface, borderRadius: 22, padding: 20, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.07, shadowRadius: 12, elevation: 4 },
+  statusPill:     { alignSelf: 'flex-start', borderWidth: 1, borderRadius: 99, paddingHorizontal: 10, paddingVertical: 3, marginBottom: 12 },
+  statusPillText: { fontSize: 10, fontFamily: FONTS.sansBold, letterSpacing: 1.2, textTransform: 'uppercase' },
+  question:       { fontFamily: FONTS.serif, fontSize: 22, color: COLORS.text, lineHeight: 30, marginBottom: 12 },
+  creatorRow:     { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 },
+  creatorAvatar:  { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  creatorInitials:{ fontSize: 9, fontFamily: FONTS.sansBold, color: COLORS.text },
+  creatorText:    { fontFamily: FONTS.sans, fontSize: 13, color: COLORS.textMuted },
+  creatorBold:    { fontFamily: FONTS.sansBold, color: COLORS.text },
+  oddsRow:        { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+  yesLabel:       { fontSize: 13, fontFamily: FONTS.sansBold, color: COLORS.yes },
+  noLabel:        { fontSize: 13, fontFamily: FONTS.sansBold, color: COLORS.no },
+  barTrack:       { flexDirection: 'row', height: 10, borderRadius: 99, overflow: 'hidden', backgroundColor: COLORS.noLight, marginBottom: 12 },
+  barYes:         { backgroundColor: COLORS.yes },
+  barNo:          { backgroundColor: COLORS.no },
+  poolRow:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  poolSide:       { fontFamily: FONTS.sans, fontSize: 12, color: COLORS.textMuted },
+  poolCenter:     { fontFamily: FONTS.sansBold, fontSize: 13, color: COLORS.text },
 
-  question:       { fontFamily: FONTS.serif, fontSize: 24, color: COLORS.text, lineHeight: 32, marginBottom: 10 },
-  criteria:       { fontFamily: FONTS.sans, fontSize: 13, color: COLORS.textMuted, lineHeight: 19, marginBottom: 20 },
-
-  poolRow:        { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, marginBottom: 20 },
-  poolYes:        { fontFamily: FONTS.sansMedium, color: COLORS.yes, fontSize: 13 },
-  poolNo:         { fontFamily: FONTS.sansMedium, color: COLORS.no, fontSize: 13 },
-  poolTotal:      { fontFamily: FONTS.sans, color: COLORS.textMuted, fontSize: 13 },
+  criteria:       { fontFamily: FONTS.sans, fontSize: 13, color: COLORS.textMuted, lineHeight: 19, marginBottom: 16 },
 
   positionCard:   { borderRadius: 16, padding: 14, marginBottom: 16 },
   posYes:         { backgroundColor: COLORS.yesLight },
@@ -453,9 +488,6 @@ const styles = StyleSheet.create({
   resolveCountdown:     { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 12, marginBottom: 8 },
   resolveCountdownText: { fontFamily: FONTS.sansMedium, fontSize: 14, color: COLORS.primary },
 
-  inviteStrip:    { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: COLORS.surface, borderRadius: 14, padding: 12, marginBottom: 16 },
-  inviteLabel:    { fontFamily: FONTS.sans, color: COLORS.textMuted, fontSize: 12 },
-  inviteCode:     { flex: 1, fontFamily: 'monospace', color: COLORS.text, fontWeight: '700', letterSpacing: 2, fontSize: 14 },
 
   resolutionCard: { backgroundColor: COLORS.surface, borderRadius: 22, padding: 16, marginBottom: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.07, shadowRadius: 12, elevation: 4 },
   resTitle:       { fontFamily: FONTS.sansBold, fontSize: 16, color: COLORS.text, marginBottom: 4 },

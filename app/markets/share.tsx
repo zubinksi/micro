@@ -1,122 +1,225 @@
 import { useEffect, useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Share, Platform, Clipboard,
+  FlatList, ActivityIndicator, Share as NativeShare, Clipboard, Platform,
 } from 'react-native';
-import { useLocalSearchParams, router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams } from 'expo-router';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
 import { COLORS, FONTS } from '@/lib/constants';
 
-function getAppBaseUrl(): string {
-  if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    return window.location.origin;
-  }
-  return 'https://micro.vercel.app';
+function getAppBaseUrl() {
+  if (Platform.OS === 'web' && typeof window !== 'undefined') return window.location.origin;
+  return 'https://maybe.vercel.app';
 }
 
-export default function ShareMarketScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+const AVATAR_COLORS = ['#C8D8C0', '#C0CCD8', '#D8CCC0', '#D0C0D8', '#C0D4D0', '#D8C8C0'];
+function avatarColor(id: string) {
+  let h = 0; for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0;
+  return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length];
+}
+
+function getTimeLeft(closesAt: string) {
+  const diff = new Date(closesAt).getTime() - Date.now();
+  if (diff <= 0) return null;
+  const days = Math.floor(diff / 86400_000);
+  const hours = Math.floor((diff % 86400_000) / 3600_000);
+  if (days > 1) return `${days} days`;
+  if (days === 1) return '1 day';
+  if (hours > 0) return `${hours} hours`;
+  return '<1 hour';
+}
+
+interface Friend {
+  id: string;
+  username: string;
+  display_name: string | null;
+  hasJoined: boolean;
+}
+
+export default function ShareScreen() {
+  const { id, outcome, stake } = useLocalSearchParams<{ id: string; outcome?: string; stake?: string }>();
+  const { user } = useAuth();
+
   const [question,   setQuestion]   = useState('');
+  const [closesAt,   setClosesAt]   = useState('');
   const [inviteCode, setInviteCode] = useState('');
+  const [friends,    setFriends]    = useState<Friend[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [copied,     setCopied]     = useState(false);
-
-  useEffect(() => {
-    if (!id) return;
-    supabase
-      .from('markets')
-      .select('question, invite_code')
-      .eq('id', id)
-      .single()
-      .then(({ data }) => {
-        if (data) {
-          setQuestion(data.question);
-          setInviteCode(data.invite_code ?? '');
-        }
-        setLoading(false);
-      });
-  }, [id]);
+  const [invitedIds, setInvitedIds] = useState<Set<string>>(new Set());
 
   const shareUrl = `${getAppBaseUrl()}/api/og?id=${id}`;
 
-  const handleShare = async () => {
-    await Share.share({
-      message: `Talk is cheap`,
-      url:     shareUrl,
-      title:   question,
-    });
-  };
+  useEffect(() => {
+    if (!id) return;
+    async function load() {
+      const { data: market } = await supabase
+        .from('markets')
+        .select('question, closes_at, invite_code, group_id')
+        .eq('id', id)
+        .single();
+      if (!market) { setLoading(false); return; }
 
-  const handleCopy = () => {
-    Clipboard.setString(inviteCode);
+      setQuestion(market.question);
+      setClosesAt(market.closes_at);
+      setInviteCode(market.invite_code ?? '');
+
+      if (market.group_id) {
+        const [{ data: positions }, { data: members }] = await Promise.all([
+          supabase.from('positions').select('user_id').eq('market_id', id),
+          supabase
+            .from('group_members')
+            .select('user_id, profile:profiles(id, username, display_name)')
+            .eq('group_id', market.group_id)
+            .neq('user_id', user?.id ?? ''),
+        ]);
+
+        const joinedIds = new Set((positions ?? []).map((p: any) => p.user_id));
+        setFriends(
+          (members ?? []).map((m: any) => ({
+            id:           m.profile.id,
+            username:     m.profile.username,
+            display_name: m.profile.display_name,
+            hasJoined:    joinedIds.has(m.profile.id),
+          }))
+        );
+      }
+      setLoading(false);
+    }
+    load();
+  }, [id, user?.id]);
+
+  const handleCopyLink = () => {
+    Clipboard.setString(shareUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleInvite = async (friend: Friend) => {
+    await NativeShare.share({
+      message: `Join my bet on Maybe!\n"${question}"\n${inviteCode ? `Invite code: ${inviteCode}\n` : ''}${shareUrl}`,
+      url: shareUrl,
+    });
+    setInvitedIds(prev => new Set([...prev, friend.id]));
+  };
+
   if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator color={COLORS.primary} />
-      </View>
-    );
+    return <View style={styles.center}><ActivityIndicator color={COLORS.primary} /></View>;
   }
 
+  const timeLeft  = closesAt ? getTimeLeft(closesAt) : null;
+  const hasBet    = !!outcome;
+
   return (
-    <View style={styles.container}>
-      <View style={styles.inner}>
+    <FlatList
+      style={styles.container}
+      contentContainerStyle={styles.inner}
+      data={friends}
+      keyExtractor={item => item.id}
+      ListHeaderComponent={
+        <View>
+          {/* Party icon */}
+          <View style={styles.partyWrap}>
+            <View style={styles.partyCircle}>
+              <Text style={styles.partyEmoji}>🎉</Text>
+            </View>
+          </View>
+          <Text style={styles.title}>Your bet is live!</Text>
+          <Text style={styles.subtitle}>Now get your friends to join</Text>
 
-        <View style={styles.successIcon}>
-          <Ionicons name="checkmark" size={32} color={COLORS.primary} />
+          {/* Market summary card */}
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryQuestion}>{question}</Text>
+            {hasBet && (
+              <Text style={styles.summaryBet}>
+                You bet{' '}
+                <Text style={outcome === 'YES' ? styles.yesText : styles.noText}>{outcome}</Text>
+                {stake ? <Text> · <Text style={styles.stakeText}>${stake}</Text></Text> : null}
+              </Text>
+            )}
+            {timeLeft && <Text style={styles.summaryClose}>Closes in {timeLeft}</Text>}
+          </View>
+
+          {/* Share link */}
+          <Text style={styles.sectionLabel}>SHARE LINK</Text>
+          <View style={styles.linkRow}>
+            <Text style={styles.linkText} numberOfLines={1}>{shareUrl}</Text>
+            <TouchableOpacity style={[styles.copyBtn, copied && styles.copyBtnDone]} onPress={handleCopyLink}>
+              <Text style={[styles.copyBtnText, copied && styles.copyBtnTextDone]}>
+                {copied ? '✓ Copied' : 'Copy'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {friends.length > 0 && (
+            <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>INVITE FRIENDS</Text>
+          )}
         </View>
-
-        <Text style={styles.title}>Market created</Text>
-        <Text style={styles.question} numberOfLines={3}>{question}</Text>
-
-        {/* Invite code */}
-        <View style={styles.codeCard}>
-          <Text style={styles.codeLabel}>Invite code</Text>
-          <Text style={styles.codeValue}>{inviteCode}</Text>
-          <TouchableOpacity style={styles.copyBtn} onPress={handleCopy}>
-            <Ionicons name={copied ? 'checkmark' : 'copy-outline'} size={16} color={copied ? COLORS.yes : COLORS.primary} />
-            <Text style={[styles.copyBtnText, copied && styles.copyBtnTextCopied]}>
-              {copied ? 'Copied!' : 'Copy code'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Share link */}
-        <TouchableOpacity style={styles.shareBtn} onPress={handleShare}>
-          <Ionicons name="share-outline" size={18} color="#fff" />
-          <Text style={styles.shareBtnText}>Invite friends</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.viewBtn}
-          onPress={() => router.replace(`/markets/${id}`)}
-        >
-          <Text style={styles.viewBtnText}>View market →</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+      }
+      renderItem={({ item }) => {
+        const isInvited = item.hasJoined || invitedIds.has(item.id);
+        const initials  = (item.display_name ?? item.username ?? '??').slice(0, 2).toUpperCase();
+        return (
+          <View style={[styles.friendRow, isInvited && styles.friendRowInvited]}>
+            <View style={[styles.avatar, { backgroundColor: avatarColor(item.id) }]}>
+              <Text style={styles.avatarText}>{initials}</Text>
+            </View>
+            <Text style={styles.friendName}>{item.display_name ?? item.username}</Text>
+            {isInvited ? (
+              <View style={styles.joinedPill}>
+                <Text style={styles.joinedText}>✓ Joined</Text>
+              </View>
+            ) : (
+              <TouchableOpacity style={styles.inviteBtn} onPress={() => handleInvite(item)}>
+                <Text style={styles.inviteBtnText}>Invite</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        );
+      }}
+      ListFooterComponent={<View style={{ height: 40 }} />}
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  container:        { flex: 1, backgroundColor: COLORS.bg },
-  center:           { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.bg },
-  inner:            { flex: 1, padding: 28, justifyContent: 'center' },
-  successIcon:      { width: 64, height: 64, borderRadius: 32, backgroundColor: COLORS.primaryLight, alignItems: 'center', justifyContent: 'center', marginBottom: 20, borderWidth: 1, borderColor: COLORS.primary + '33' },
-  title:            { fontFamily: FONTS.serif, fontSize: 30, color: COLORS.text, marginBottom: 10 },
-  question:         { fontFamily: FONTS.sans, fontSize: 16, color: COLORS.textMuted, lineHeight: 22, marginBottom: 32 },
-  codeCard:         { backgroundColor: COLORS.surface, borderRadius: 4, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center' },
-  codeLabel:        { fontFamily: FONTS.sansMedium, fontSize: 11, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 },
-  codeValue:        { fontFamily: FONTS.sansBold, fontSize: 32, color: COLORS.text, letterSpacing: 6, marginBottom: 16 },
-  copyBtn:          { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: COLORS.primary, borderRadius: 4, paddingVertical: 8, paddingHorizontal: 16 },
-  copyBtnText:      { fontFamily: FONTS.sansMedium, color: COLORS.primary, fontSize: 14 },
-  copyBtnTextCopied:{ color: COLORS.yes },
-  shareBtn:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: COLORS.primary, borderRadius: 4, paddingVertical: 16, marginBottom: 12 },
-  shareBtnText:     { fontFamily: FONTS.sansBold, color: '#fff', fontSize: 16 },
-  viewBtn:          { paddingVertical: 12, alignItems: 'center' },
-  viewBtnText:      { fontFamily: FONTS.sansMedium, color: COLORS.textMuted, fontSize: 15 },
+  container:          { flex: 1, backgroundColor: COLORS.bg },
+  center:             { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.bg },
+  inner:              { padding: 20, paddingTop: 24 },
+
+  partyWrap:          { alignItems: 'center', marginBottom: 16 },
+  partyCircle:        { width: 72, height: 72, borderRadius: 36, backgroundColor: COLORS.yesLight, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: COLORS.yes + '50' },
+  partyEmoji:         { fontSize: 36 },
+
+  title:              { fontFamily: FONTS.serif, fontSize: 28, color: COLORS.text, textAlign: 'center', marginBottom: 6 },
+  subtitle:           { fontFamily: FONTS.sans, fontSize: 14, color: COLORS.textMuted, textAlign: 'center', marginBottom: 24 },
+
+  summaryCard:        { backgroundColor: COLORS.surface, borderRadius: 22, padding: 18, marginBottom: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.07, shadowRadius: 12, elevation: 4 },
+  summaryQuestion:    { fontFamily: FONTS.serif, fontSize: 16, color: COLORS.text, lineHeight: 23, marginBottom: 10 },
+  summaryBet:         { fontFamily: FONTS.sans, fontSize: 14, color: COLORS.textMuted, marginBottom: 4 },
+  yesText:            { fontFamily: FONTS.sansBold, color: COLORS.yes },
+  noText:             { fontFamily: FONTS.sansBold, color: COLORS.no },
+  stakeText:          { fontFamily: FONTS.sansBold, color: COLORS.text },
+  summaryClose:       { fontFamily: FONTS.sans, fontSize: 13, color: COLORS.textDim },
+
+  sectionLabel:       { fontFamily: FONTS.sansBold, fontSize: 11, color: COLORS.textMuted, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 10 },
+  sectionLabelSpaced: { marginTop: 24 },
+
+  linkRow:            { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surface, borderRadius: 14, padding: 14, gap: 10, marginBottom: 4 },
+  linkText:           { flex: 1, fontFamily: FONTS.sans, fontSize: 13, color: COLORS.textMuted },
+  copyBtn:            { backgroundColor: COLORS.primary, borderRadius: 99, paddingVertical: 6, paddingHorizontal: 14 },
+  copyBtnDone:        { backgroundColor: COLORS.yes },
+  copyBtnText:        { fontFamily: FONTS.sansBold, color: '#fff', fontSize: 13 },
+  copyBtnTextDone:    { color: '#fff' },
+
+  friendRow:          { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: COLORS.surface, borderRadius: 16, padding: 14, marginBottom: 10, borderWidth: 1.5, borderColor: COLORS.border },
+  friendRowInvited:   { borderColor: COLORS.primary + '50' },
+  avatar:             { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  avatarText:         { fontFamily: FONTS.sansBold, fontSize: 14, color: COLORS.text },
+  friendName:         { flex: 1, fontFamily: FONTS.sansBold, fontSize: 15, color: COLORS.text },
+  joinedPill:         { backgroundColor: COLORS.yesLight, borderRadius: 99, paddingVertical: 6, paddingHorizontal: 14 },
+  joinedText:         { fontFamily: FONTS.sansBold, fontSize: 13, color: COLORS.yes },
+  inviteBtn:          { backgroundColor: COLORS.primary, borderRadius: 99, paddingVertical: 6, paddingHorizontal: 14 },
+  inviteBtnText:      { fontFamily: FONTS.sansBold, color: '#fff', fontSize: 13 },
 });

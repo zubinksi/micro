@@ -160,9 +160,9 @@ const styles = StyleSheet.create({
   amountOwed:      { color: COLORS.yes },
   marketQ:         { fontFamily: FONTS.sans, color: COLORS.textMuted, fontSize: 12 },
   cardActions:     { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  payBtn:          { backgroundColor: COLORS.primary, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 14 },
+  payBtn:          { backgroundColor: COLORS.primary, borderRadius: 99, paddingVertical: 8, paddingHorizontal: 14 },
   payBtnText:      { fontFamily: FONTS.sansMedium, color: '#fff', fontSize: 13 },
-  settledBtn:      { borderRadius: 10, borderWidth: 1, borderColor: COLORS.border, paddingVertical: 8, paddingHorizontal: 14 },
+  settledBtn:      { borderRadius: 99, borderWidth: 1, borderColor: COLORS.border, paddingVertical: 8, paddingHorizontal: 14 },
   settledBtnText:  { fontFamily: FONTS.sans, color: COLORS.textMuted, fontSize: 13 },
 
   empty:           { alignItems: 'center', paddingTop: 80 },
