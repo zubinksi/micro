@@ -48,7 +48,7 @@ export default function ShareScreen() {
   const [loading,    setLoading]    = useState(true);
   const [invitedIds, setInvitedIds] = useState<Set<string>>(new Set());
 
-  const shareUrl = `${getAppBaseUrl()}/api/og?id=${id}`;
+  const shareUrl = `${getAppBaseUrl()}/api/og?id=${id}${question ? `&q=${encodeURIComponent(question)}` : ''}`;
 
   useEffect(() => {
     if (!id) return;
@@ -91,8 +91,8 @@ export default function ShareScreen() {
 
   const handleShareLink = async () => {
     await NativeShare.share({
-      message: `${question}\n${shareUrl}`,
-      url: shareUrl,
+      url:   shareUrl,
+      title: question,
     });
   };
 

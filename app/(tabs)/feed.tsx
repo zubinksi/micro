@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
   center:       { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.bg },
 
   header:       { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 8 },
-  headerRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 },
+  headerRow:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
   logo:         { fontFamily: FONTS.serif, fontSize: 32, color: COLORS.text },
   profileBtn:   { padding: 4 },
 

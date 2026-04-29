@@ -13,19 +13,18 @@ import type { ResolverType } from '@/lib/types';
 
 // ─── Duration presets ────────────────────────────────────────────────────────
 
-type DurationPreset = '24h' | '48h' | '72h' | '1w' | 'custom';
+type DurationPreset = '12h' | '24h' | '48h' | 'custom';
 
 const DURATION_OPTIONS: { value: DurationPreset; label: string }[] = [
+  { value: '12h', label: '12 hrs' },
   { value: '24h', label: '24 hrs' },
   { value: '48h', label: '48 hrs' },
-  { value: '72h', label: '72 hrs' },
-  { value: '1w',  label: '1 week' },
   { value: 'custom', label: 'Custom' },
 ];
 
 function getPresetDate(preset: Exclude<DurationPreset, 'custom'>): Date {
   const now = new Date();
-  const offsets: Record<string, number> = { '24h': 24, '48h': 48, '72h': 72, '1w': 168 };
+  const offsets: Record<string, number> = { '12h': 12, '24h': 24, '48h': 48 };
   return new Date(now.getTime() + offsets[preset] * 3_600_000);
 }
 
@@ -335,7 +334,7 @@ const styles = StyleSheet.create({
   container:             { flex: 1, backgroundColor: COLORS.bg },
   inner:                 { padding: 20, paddingBottom: 48 },
   label:                 { fontFamily: FONTS.sansBold, color: COLORS.textMuted, fontSize: 11, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 8, marginTop: 20 },
-  input:                 { backgroundColor: COLORS.surface, borderColor: COLORS.border, borderWidth: 2, borderRadius: 16, padding: 14, fontSize: 15, fontFamily: FONTS.sans, color: COLORS.text },
+  input:                 { backgroundColor: COLORS.surface, borderColor: COLORS.border, borderWidth: 2, borderRadius: 16, padding: 14, fontSize: 16, fontFamily: FONTS.sans, color: COLORS.text },
   multiline:             { minHeight: 80, textAlignVertical: 'top' },
   durationRow:           { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   durationBtn:           { borderRadius: 99, paddingVertical: 8, paddingHorizontal: 16, borderWidth: 1, borderColor: COLORS.border, backgroundColor: COLORS.surface },
@@ -353,7 +352,7 @@ const styles = StyleSheet.create({
   refLabel:              { fontFamily: FONTS.sansMedium, color: COLORS.text, fontSize: 14, marginBottom: 4 },
   refHint:               { fontFamily: FONTS.sans, color: COLORS.textMuted, fontSize: 12, lineHeight: 17, marginBottom: 12 },
   refRow:                { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
-  refInput:              { flex: 1, backgroundColor: COLORS.surface, borderColor: COLORS.border, borderWidth: 1, borderRadius: 10, padding: 10, fontFamily: FONTS.sans, fontSize: 13, color: COLORS.text },
+  refInput:              { flex: 1, backgroundColor: COLORS.surface, borderColor: COLORS.border, borderWidth: 1, borderRadius: 10, padding: 10, fontFamily: FONTS.sans, fontSize: 16, color: COLORS.text },
   addRefBtn:             { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
   addRefText:            { fontFamily: FONTS.sansMedium, color: COLORS.primary, fontSize: 13 },
   error:                 { fontFamily: FONTS.sans, color: COLORS.no, marginTop: 12, fontSize: 13 },

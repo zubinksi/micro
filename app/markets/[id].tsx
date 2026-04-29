@@ -166,11 +166,11 @@ export default function MarketDetailScreen() {
           <View style={styles.creatorRow}>
             <View style={[styles.creatorAvatar, { backgroundColor: avatarColor(market.creator_id) }]}>
               <Text style={styles.creatorInitials}>
-                {(market.creator?.display_name ?? market.creator?.username ?? '??').slice(0, 2).toUpperCase()}
+                {(market.creator?.username ?? '??').slice(0, 2).toUpperCase()}
               </Text>
             </View>
             <Text style={styles.creatorText}>
-              by <Text style={styles.creatorBold}>{market.creator?.display_name ?? market.creator?.username}</Text>
+              by <Text style={styles.creatorBold}>{market.creator?.username}</Text>
               {' · '}{getTimeLeft(market.closes_at)} left
             </Text>
           </View>
@@ -343,7 +343,7 @@ export default function MarketDetailScreen() {
             <>
               <Text style={styles.commentsTitle}>Activity ({feed.length})</Text>
               {feed.map(item => {
-                const username = item.data.profile?.username ?? 'user';
+                const username = item.data.profile?.username ?? '';
 
                 if (item.type === 'bet') {
                   const isYes = item.data.outcome === 'YES';
@@ -352,7 +352,7 @@ export default function MarketDetailScreen() {
                       <View style={[styles.betAccent, isYes ? styles.accentYes : styles.accentNo]} />
                       <View style={styles.activityInner}>
                         <View style={styles.activityMeta}>
-                          <Text style={styles.activityName}>@{username}</Text>
+                          <Text style={styles.activityName}>{username}</Text>
                           <Text style={styles.activityTime}>{fmtTime(item.ts)}</Text>
                         </View>
                         <View style={styles.betDetails}>
