@@ -342,38 +342,60 @@ export default function MarketDetailScreen() {
           return (
             <>
               <Text style={styles.commentsTitle}>Activity ({feed.length})</Text>
-              {feed.map(item => item.type === 'bet' ? (
-                <View key={`bet-${item.id}`} style={styles.betRow}>
-                  <View style={[styles.betOutcomeDot, item.data.outcome === 'YES' ? styles.dotYes : styles.dotNo]} />
-                  <View style={styles.betBody}>
-                    <View style={styles.commentMeta}>
-                      <Text style={styles.commentUser}>@{item.data.profile?.username}</Text>
-                      <Text style={styles.commentTime}>{fmtTime(item.ts)}</Text>
+              {feed.map(item => {
+                const profile  = item.data.profile;
+                const name     = profile?.display_name ?? profile?.username ?? 'User';
+                const initials = name.slice(0, 2).toUpperCase();
+                const uid      = item.data.user_id ?? '';
+
+                if (item.type === 'bet') {
+                  const isYes = item.data.outcome === 'YES';
+                  return (
+                    <View key={`bet-${item.id}`} style={[styles.activityCard, styles.betCard]}>
+                      <View style={[styles.betAccent, isYes ? styles.accentYes : styles.accentNo]} />
+                      <View style={styles.activityInner}>
+                        <View style={styles.activityMeta}>
+                          <View style={[styles.activityAvatar, { backgroundColor: avatarColor(uid) }]}>
+                            <Text style={styles.activityAvatarText}>{initials}</Text>
+                          </View>
+                          <Text style={styles.activityName}>{name}</Text>
+                          <Text style={styles.activityTime}>{fmtTime(item.ts)}</Text>
+                        </View>
+                        <View style={styles.betDetails}>
+                          <Text style={styles.betLabel}>bet</Text>
+                          <View style={[styles.outcomePill, isYes ? styles.pillYes : styles.pillNo]}>
+                            <Text style={[styles.outcomePillText, isYes ? styles.pillTextYes : styles.pillTextNo]}>
+                              {item.data.outcome}
+                            </Text>
+                          </View>
+                          <Text style={styles.betAmount}>· ${item.data.stake}</Text>
+                        </View>
+                      </View>
                     </View>
-                    <Text style={styles.betLine}>
-                      bet{' '}
-                      <Text style={item.data.outcome === 'YES' ? styles.yesText : styles.noText}>
-                        {item.data.outcome}
-                      </Text>
-                      {' · '}
-                      <Text style={styles.betAmount}>${item.data.stake}</Text>
-                    </Text>
+                  );
+                }
+
+                return (
+                  <View key={`comment-${item.id}`} style={styles.activityCard}>
+                    <View style={styles.activityInner}>
+                      <View style={styles.activityMeta}>
+                        <View style={[styles.activityAvatar, { backgroundColor: avatarColor(uid) }]}>
+                          <Text style={styles.activityAvatarText}>{initials}</Text>
+                        </View>
+                        <Text style={styles.activityName}>{name}</Text>
+                        <Text style={styles.activityTime}>{fmtTime(item.ts)}</Text>
+                        <Text style={styles.commentBubble}>💬</Text>
+                        {item.data.user_id === user?.id && (
+                          <TouchableOpacity onPress={() => deleteComment(item.data.id)}>
+                            <Ionicons name="trash-outline" size={13} color={COLORS.textDim} />
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                      <Text style={styles.commentContent}>{item.data.content}</Text>
+                    </View>
                   </View>
-                </View>
-              ) : (
-                <View key={`comment-${item.id}`} style={styles.commentRow}>
-                  <View style={styles.commentMeta}>
-                    <Text style={styles.commentUser}>@{item.data.profile?.username}</Text>
-                    <Text style={styles.commentTime}>{fmtTime(item.ts)}</Text>
-                    {item.data.user_id === user?.id && (
-                      <TouchableOpacity onPress={() => deleteComment(item.data.id)}>
-                        <Ionicons name="trash-outline" size={13} color={COLORS.textDim} />
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                  <Text style={styles.commentContent}>{item.data.content}</Text>
-                </View>
-              ))}
+                );
+              })}
             </>
           );
         })()}
@@ -416,7 +438,14 @@ export default function MarketDetailScreen() {
 }
 
 function fmtTime(ts: string): string {
-  return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const diff  = Date.now() - new Date(ts).getTime();
+  const mins  = Math.floor(diff / 60_000);
+  const hours = Math.floor(diff / 3600_000);
+  const days  = Math.floor(diff / 86400_000);
+  if (mins < 1)  return 'just now';
+  if (hours < 1) return `${mins}m ago`;
+  if (days < 1)  return `${hours}h ago`;
+  return `${days}d ago`;
 }
 
 function getResolveTime(resolutionCreatedAt: string): string {
@@ -514,19 +543,32 @@ const styles = StyleSheet.create({
   metaItem:       { fontFamily: FONTS.sans, color: COLORS.textDim, fontSize: 12 },
   metaDot:        { color: COLORS.textDim, fontSize: 12 },
 
-  commentsTitle:  { fontFamily: FONTS.sansBold, fontSize: 15, color: COLORS.text, marginBottom: 12 },
-  commentRow:     { marginBottom: 8, padding: 12, backgroundColor: COLORS.surface, borderRadius: 14 },
-  commentMeta:    { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  commentUser:    { fontFamily: FONTS.sansMedium, color: COLORS.primary, fontSize: 13 },
-  commentTime:    { fontFamily: FONTS.sans, color: COLORS.textDim, fontSize: 11, flex: 1 },
-  commentContent: { fontFamily: FONTS.sans, color: COLORS.text, fontSize: 14, lineHeight: 20 },
-  betRow:         { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 8, padding: 12, backgroundColor: COLORS.surface, borderRadius: 14 },
-  betOutcomeDot:  { width: 8, height: 8, borderRadius: 4, marginTop: 5 },
-  dotYes:         { backgroundColor: COLORS.yes },
-  dotNo:          { backgroundColor: COLORS.no },
-  betBody:        { flex: 1 },
-  betLine:        { fontFamily: FONTS.sans, fontSize: 13, color: COLORS.text },
-  betAmount:      { fontFamily: FONTS.sansBold },
+  commentsTitle:      { fontFamily: FONTS.sansBold, fontSize: 11, color: COLORS.textMuted, letterSpacing: 1.1, textTransform: 'uppercase', marginBottom: 10 },
+
+  activityCard:       { backgroundColor: COLORS.surface, borderRadius: 14, marginBottom: 8, overflow: 'hidden' },
+  betCard:            { flexDirection: 'row' },
+  betAccent:          { width: 3 },
+  accentYes:          { backgroundColor: COLORS.yes },
+  accentNo:           { backgroundColor: COLORS.no },
+  activityInner:      { flex: 1, padding: 12 },
+  activityMeta:       { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 7 },
+  activityAvatar:     { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+  activityAvatarText: { fontFamily: FONTS.sansBold, fontSize: 11, color: COLORS.text },
+  activityName:       { fontFamily: FONTS.sansBold, fontSize: 13, color: COLORS.text },
+  activityTime:       { flex: 1, fontFamily: FONTS.sans, fontSize: 11, color: COLORS.textDim },
+  commentBubble:      { fontSize: 13 },
+
+  betDetails:         { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  betLabel:           { fontFamily: FONTS.sans, fontSize: 13, color: COLORS.textMuted },
+  outcomePill:        { borderRadius: 99, paddingHorizontal: 8, paddingVertical: 2 },
+  pillYes:            { backgroundColor: COLORS.yesLight },
+  pillNo:             { backgroundColor: COLORS.noLight },
+  outcomePillText:    { fontFamily: FONTS.sansBold, fontSize: 12 },
+  pillTextYes:        { color: COLORS.yes },
+  pillTextNo:         { color: COLORS.no },
+  betAmount:          { fontFamily: FONTS.sansBold, fontSize: 13, color: COLORS.text },
+
+  commentContent:     { fontFamily: FONTS.sans, color: COLORS.text, fontSize: 14, lineHeight: 20 },
 
   commentInputWrap: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderTopWidth: 1, borderTopColor: COLORS.border, backgroundColor: COLORS.surface },
   commentField:     { flex: 1, fontFamily: FONTS.sans, color: COLORS.text, fontSize: 14 },
