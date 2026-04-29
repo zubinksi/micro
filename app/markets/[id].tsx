@@ -373,7 +373,7 @@ export default function MarketDetailScreen() {
                   <View key={`comment-${item.id}`} style={styles.activityCard}>
                     <View style={styles.activityInner}>
                       <View style={styles.activityMeta}>
-                        <Text style={styles.activityName}>@{username}</Text>
+                        <Text style={styles.activityName}>{username}</Text>
                         <Text style={styles.activityTime}>{fmtTime(item.ts)}</Text>
                         {item.data.user_id === user?.id && (
                           <TouchableOpacity onPress={() => deleteComment(item.data.id)}>
