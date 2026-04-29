@@ -30,7 +30,7 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.inner}>
-        <Text style={styles.wordmark}>Hunch</Text>
+        <Text style={styles.wordmark}>Maybe</Text>
         <Text style={styles.tagline}>Prediction markets for your group chat.</Text>
 
         {step === 'email' ? (
@@ -81,8 +81,8 @@ const styles = StyleSheet.create({
   wordmark:   { fontFamily: FONTS.serif, fontSize: 48, color: COLORS.primary, marginBottom: 8 },
   tagline:    { fontFamily: FONTS.sans, fontSize: 16, color: COLORS.textMuted, marginBottom: 48, lineHeight: 22 },
   label:      { fontFamily: FONTS.sansMedium, fontSize: 12, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 8 },
-  input:      { backgroundColor: COLORS.surface, borderColor: COLORS.border, borderWidth: 1, borderRadius: 4, padding: 16, fontFamily: FONTS.sans, fontSize: 16, color: COLORS.text, marginBottom: 16 },
-  btn:        { backgroundColor: COLORS.primary, borderRadius: 4, paddingVertical: 16, alignItems: 'center', marginBottom: 12 },
+  input:      { backgroundColor: COLORS.surface, borderColor: COLORS.border, borderWidth: 1, borderRadius: 14, padding: 16, fontFamily: FONTS.sans, fontSize: 16, color: COLORS.text, marginBottom: 16 },
+  btn:        { backgroundColor: COLORS.primary, borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginBottom: 12 },
   btnDisabled:{ opacity: 0.5 },
   btnText:    { fontFamily: FONTS.sansBold, color: '#fff', fontSize: 16 },
   error:      { fontFamily: FONTS.sans, color: COLORS.no, marginTop: 4, textAlign: 'center', fontSize: 14 },

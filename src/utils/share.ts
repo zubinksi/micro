@@ -6,7 +6,7 @@ function getAppBaseUrl(): string {
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
     return window.location.origin;
   }
-  return 'https://hunch.vercel.app';
+  return 'https://maybe.vercel.app';
 }
 
 export async function shareMarketLink(market: Market) {
@@ -28,7 +28,7 @@ export async function shareOutcomeCard(market: Market, position: Position, won: 
   const verb = won ? '🎯 Called it' : '📉 Missed this one';
   await Share.share({
     message: [
-      `${verb} on Hunch`,
+      `${verb} on Maybe`,
       `"${market.question}"`,
       `I bet ${position.outcome} at ${impliedPct}% — and I was ${won ? 'right' : 'wrong'}.`,
       ogUrl,

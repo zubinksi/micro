@@ -47,7 +47,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const id     = req.query.id as string | undefined;
   const qParam = req.query.q  as string | undefined;
 
-  let question = qParam || 'A prediction on Hunch';
+  let question = qParam || 'A prediction on Maybe';
   let yesPct   = 50;
   let pool     = 0;
   let status   = 'open';
@@ -101,7 +101,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     '<rect width="1200" height="630" fill="#F5F1EB"/>' +
     '<rect width="1200" height="8" fill="#2D6A4F"/>' +
     '<rect y="622" width="1200" height="8" fill="#2D6A4F" opacity="0.15"/>' +
-    '<text x="56" y="92" font-family="DM Serif Display" font-size="36" fill="#2D6A4F">Hunch</text>' +
+    '<text x="56" y="92" font-family="DM Serif Display" font-size="36" fill="#FF5252">Maybe</text>' +
     '<rect x="' + (1200 - 56 - statusW) + '" y="66" width="' + statusW + '" height="32" fill="none" stroke="' + esc(statusColor) + '" stroke-width="1.5" rx="2"/>' +
     '<text x="' + (1200 - 56 - statusW / 2) + '" y="87" font-family="DM Sans" font-weight="700" font-size="13" fill="' + esc(statusColor) + '" text-anchor="middle" letter-spacing="1">' + esc(statusLabel.toUpperCase()) + '</text>' +
     linesXml +

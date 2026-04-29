@@ -53,13 +53,13 @@ function AvatarGroup({ bettors }: { bettors: Profile[] }) {
 }
 
 export function MarketCard({ market, onPress }: Props) {
-  const odds     = getPoolOdds(market);
-  const myPos    = market.my_position;
-  const yesPct   = odds.totalPool === 0 ? 50 : Math.round(odds.yesProb * 100);
-  const noPct    = 100 - yesPct;
-  const timeLeft = getTimeLeft(market.closes_at);
-  const bettors  = market.position_count ?? 0;
-  const comments = market.comment_count ?? 0;
+  const odds       = getPoolOdds(market);
+  const myPos      = market.my_position;
+  const yesPct     = odds.totalPool === 0 ? 50 : Math.round(odds.yesProb * 100);
+  const noPct      = 100 - yesPct;
+  const timeLeft   = getTimeLeft(market.closes_at);
+  const bettors    = market.position_count ?? 0;
+  const comments   = market.comment_count ?? 0;
   const topBettors = market.top_bettors ?? [];
 
   return (
@@ -93,7 +93,7 @@ export function MarketCard({ market, onPress }: Props) {
         <View style={styles.statsLeft}>
           {topBettors.length > 0 && <AvatarGroup bettors={topBettors} />}
           <Text style={styles.statBettors}>
-            {bettors} {bettors === 1 ? 'betting' : 'betting'}
+            {bettors} betting
           </Text>
         </View>
         <View style={styles.statsRight}>
@@ -138,15 +138,18 @@ const av = StyleSheet.create({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: COLORS.surface,
-    borderRadius: 12,
+    borderRadius: 22,
     padding: 16,
     marginHorizontal: 16,
     marginBottom: 10,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.07,
+    shadowRadius: 12,
+    elevation: 4,
   },
   topRow:       { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
-  statusPill:   { borderWidth: 1, borderRadius: 2, paddingHorizontal: 6, paddingVertical: 2 },
+  statusPill:   { borderWidth: 1, borderRadius: 99, paddingHorizontal: 8, paddingVertical: 3 },
   statusText:   { fontSize: 10, fontFamily: FONTS.sansMedium, letterSpacing: 0.8, textTransform: 'uppercase' },
   timeRight:    { marginLeft: 'auto', fontSize: 11, fontFamily: FONTS.sans, color: COLORS.textDim },
 
@@ -155,7 +158,7 @@ const styles = StyleSheet.create({
   oddsRow:      { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
   yesLabel:     { fontSize: 13, fontFamily: FONTS.sansBold, color: COLORS.yes },
   noLabel:      { fontSize: 13, fontFamily: FONTS.sansBold, color: COLORS.no },
-  barTrack:     { flexDirection: 'row', height: 6, borderRadius: 3, overflow: 'hidden', backgroundColor: COLORS.border, marginBottom: 12 },
+  barTrack:     { flexDirection: 'row', height: 6, borderRadius: 99, overflow: 'hidden', backgroundColor: COLORS.noLight, marginBottom: 12 },
   barYes:       { backgroundColor: COLORS.yes },
   barNo:        { backgroundColor: COLORS.no },
 
@@ -166,7 +169,7 @@ const styles = StyleSheet.create({
   statNum:      { fontFamily: FONTS.sans, fontSize: 12, color: COLORS.textMuted },
   statDot:      { fontFamily: FONTS.sans, fontSize: 12, color: COLORS.textDim },
 
-  myBetRow:     { marginTop: 12, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 },
+  myBetRow:     { marginTop: 12, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
   myBetRowYes:  { backgroundColor: COLORS.yesLight },
   myBetRowNo:   { backgroundColor: COLORS.noLight },
   myBetText:    { fontFamily: FONTS.sansBold, fontSize: 13 },

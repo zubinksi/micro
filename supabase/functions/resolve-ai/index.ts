@@ -10,7 +10,7 @@ const corsHeaders = {
 async function fetchPageText(url: string): Promise<string> {
   try {
     const r = await fetch(url, {
-      headers: { 'User-Agent': 'Hunch-AI-Resolver/1.0' },
+      headers: { 'User-Agent': 'Maybe-AI-Resolver/1.0' },
       signal: AbortSignal.timeout(8000),
     });
     if (!r.ok) return '';

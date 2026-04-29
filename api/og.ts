@@ -9,7 +9,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // qParam is the question passed directly from the share function — use it
   // immediately so we never fall back to the generic title.
-  let title       = qParam || 'Hunch — Prediction Markets';
+  let title       = qParam || 'Maybe — Prediction Markets';
   let description = 'Private prediction markets for your group chat.';
   const marketUrl = id ? `${base}/markets/${id}` : base;
   const imageUrl  = id
@@ -54,7 +54,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:type" content="image/png">
-  <meta property="og:site_name" content="Hunch">
+  <meta property="og:site_name" content="Maybe">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="${esc(title)}">
   <meta name="twitter:description" content="${esc(description)}">

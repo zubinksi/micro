@@ -34,10 +34,14 @@ export function AIResolutionCard({ outcome, summary }: Props) {
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 22,
     overflow: 'hidden',
     marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.07,
+    shadowRadius: 12,
+    elevation: 4,
   },
   header: {
     flexDirection: 'row',
@@ -49,7 +53,7 @@ const styles = StyleSheet.create({
   iconSquare: {
     width: 28,
     height: 28,
-    borderRadius: 8,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },

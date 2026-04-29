@@ -4,23 +4,25 @@ import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator } from 'react-native';
 import { useFonts } from 'expo-font';
 import {
-  DMSerifDisplay_400Regular,
-} from '@expo-google-fonts/dm-serif-display';
-import {
-  DMSans_400Regular,
-  DMSans_500Medium,
-  DMSans_700Bold,
-} from '@expo-google-fonts/dm-sans';
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  Inter_800ExtraBold,
+  Inter_900Black,
+} from '@expo-google-fonts/inter';
 import { useAuth } from '@/hooks/useAuth';
 import { COLORS } from '@/lib/constants';
 
 export default function RootLayout() {
   const { session, loading } = useAuth();
   const [fontsLoaded] = useFonts({
-    DMSerifDisplay_400Regular,
-    DMSans_400Regular,
-    DMSans_500Medium,
-    DMSans_700Bold,
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    Inter_800ExtraBold,
+    Inter_900Black,
   });
 
   useEffect(() => {
@@ -45,9 +47,9 @@ export default function RootLayout() {
       <StatusBar style="dark" />
       <Stack
         screenOptions={{
-          headerStyle: { backgroundColor: COLORS.surface },
+          headerStyle: { backgroundColor: COLORS.bg },
           headerTintColor: COLORS.text,
-          headerTitleStyle: { fontFamily: 'DMSans_700Bold', fontSize: 16 },
+          headerTitleStyle: { fontFamily: 'Inter_700Bold', fontSize: 16 },
           headerShadowVisible: false,
           contentStyle: { backgroundColor: COLORS.bg },
           animation: 'slide_from_right',
@@ -55,8 +57,8 @@ export default function RootLayout() {
       >
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="markets/create" options={{ title: 'New Market', presentation: 'modal', headerTitleAlign: 'center' }} />
-        <Stack.Screen name="markets/join"   options={{ title: 'Join Market',  presentation: 'modal', headerTitleAlign: 'center' }} />
+        <Stack.Screen name="markets/create" options={{ title: 'New Bet', presentation: 'modal', headerTitleAlign: 'center' }} />
+        <Stack.Screen name="markets/join"   options={{ title: 'Join Market', presentation: 'modal', headerTitleAlign: 'center' }} />
         <Stack.Screen name="markets/[id]"   options={{ title: '' }} />
         <Stack.Screen name="markets/share"  options={{ title: '', presentation: 'modal', headerShown: false }} />
         <Stack.Screen name="profile"        options={{ title: 'Profile', headerTitleAlign: 'center' }} />

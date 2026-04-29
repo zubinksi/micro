@@ -12,7 +12,7 @@ import type { Settlement } from '@/lib/types';
 export default function SettleScreen() {
   const { user } = useAuth();
   const { fetchSettlements, markSettled } = useSettlements(user?.id);
-  const [debts, setDebts]       = useState<Settlement[]>([]);
+  const [debts, setDebts]           = useState<Settlement[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = async () => {
@@ -27,6 +27,8 @@ export default function SettleScreen() {
   const iOwe   = debts.filter(d => d.from_user_id === user?.id);
   const owedMe = debts.filter(d => d.to_user_id === user?.id);
 
+  const netAmount = owedMe.reduce((s, d) => s + d.amount, 0) - iOwe.reduce((s, d) => s + d.amount, 0);
+
   const handleSettle = async (debt: Settlement) => {
     await markSettled(debt.id);
     await load();
@@ -34,21 +36,23 @@ export default function SettleScreen() {
 
   const renderDebt = (debt: Settlement, direction: 'owe' | 'owed') => {
     const counterparty = direction === 'owe' ? debt.to_profile : debt.from_profile;
-    const note = settlementNote(debt.market?.question ?? 'Micro bet');
+    const note = settlementNote(debt.market?.question ?? 'Maybe bet');
 
     return (
       <View key={debt.id} style={styles.card}>
         <View style={styles.cardTop}>
-          <Text style={styles.counterparty}>
-            {direction === 'owe' ? 'You owe ' : ''}
-            <Text style={styles.name}>{counterparty?.display_name ?? counterparty?.username}</Text>
-            {direction === 'owed' ? ' owes you' : ''}
-          </Text>
+          <View style={styles.cardTopLeft}>
+            <Text style={styles.counterparty}>
+              {direction === 'owe' ? 'You owe ' : ''}
+              <Text style={styles.name}>{counterparty?.display_name ?? counterparty?.username}</Text>
+              {direction === 'owed' ? ' owes you' : ''}
+            </Text>
+            <Text style={styles.marketQ} numberOfLines={1}>{debt.market?.question}</Text>
+          </View>
           <Text style={[styles.amount, direction === 'owe' ? styles.amountOwe : styles.amountOwed]}>
             {formatAmount(debt.amount)}
           </Text>
         </View>
-        <Text style={styles.marketQ} numberOfLines={1}>{debt.market?.question}</Text>
 
         <View style={styles.cardActions}>
           {direction === 'owe' && counterparty?.username && (
@@ -83,6 +87,17 @@ export default function SettleScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
         ListHeaderComponent={
           <View>
+            <View style={styles.titleRow}>
+              <Text style={styles.screenTitle}>Settle</Text>
+              {debts.length > 0 && (
+                <View style={[styles.netPill, netAmount >= 0 ? styles.netPillPos : styles.netPillNeg]}>
+                  <Text style={[styles.netPillText, netAmount >= 0 ? styles.netPillTextPos : styles.netPillTextNeg]}>
+                    {netAmount >= 0 ? '+' : ''}{formatAmount(netAmount)} net
+                  </Text>
+                </View>
+              )}
+            </View>
+
             {iOwe.length === 0 && owedMe.length === 0 && (
               <View style={styles.empty}>
                 <Text style={styles.emptyTitle}>All settled up</Text>
@@ -111,23 +126,46 @@ export default function SettleScreen() {
 }
 
 const styles = StyleSheet.create({
-  container:      { flex: 1, backgroundColor: COLORS.bg },
-  section:        { marginBottom: 24, paddingHorizontal: 16 },
-  sectionTitle:   { fontFamily: FONTS.sansBold, fontSize: 11, color: COLORS.textMuted, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 10, marginTop: 20 },
-  card:           { backgroundColor: COLORS.surface, borderRadius: 4, padding: 16, borderWidth: 1, borderColor: COLORS.border, marginBottom: 8 },
-  cardTop:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  counterparty:   { fontFamily: FONTS.sans, color: COLORS.textMuted, fontSize: 13 },
-  name:           { fontFamily: FONTS.sansBold, color: COLORS.text },
-  amount:         { fontFamily: FONTS.sansBold, fontSize: 20 },
-  amountOwe:      { color: COLORS.no },
-  amountOwed:     { color: COLORS.yes },
-  marketQ:        { fontFamily: FONTS.sans, color: COLORS.textMuted, fontSize: 12, marginBottom: 14 },
-  cardActions:    { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  payBtn:         { backgroundColor: COLORS.primary, borderRadius: 4, paddingVertical: 8, paddingHorizontal: 14 },
-  payBtnText:     { fontFamily: FONTS.sansMedium, color: '#fff', fontSize: 13 },
-  settledBtn:     { borderRadius: 4, borderWidth: 1, borderColor: COLORS.border, paddingVertical: 8, paddingHorizontal: 14 },
-  settledBtnText: { fontFamily: FONTS.sans, color: COLORS.textMuted, fontSize: 13 },
-  empty:          { alignItems: 'center', paddingTop: 80 },
-  emptyTitle:     { fontFamily: FONTS.serif, fontSize: 22, color: COLORS.text, marginBottom: 8 },
-  emptySub:       { fontFamily: FONTS.sans, color: COLORS.textMuted, fontSize: 14 },
+  container:       { flex: 1, backgroundColor: COLORS.bg },
+
+  titleRow:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 20, paddingBottom: 4 },
+  screenTitle:     { fontFamily: FONTS.serif, fontSize: 32, color: COLORS.text },
+  netPill:         { borderRadius: 99, paddingHorizontal: 12, paddingVertical: 5 },
+  netPillPos:      { backgroundColor: COLORS.yesLight },
+  netPillNeg:      { backgroundColor: COLORS.noLight },
+  netPillText:     { fontFamily: FONTS.sansBold, fontSize: 13 },
+  netPillTextPos:  { color: COLORS.yes },
+  netPillTextNeg:  { color: COLORS.no },
+
+  section:         { marginBottom: 8, paddingHorizontal: 16 },
+  sectionTitle:    { fontFamily: FONTS.sansBold, fontSize: 11, color: COLORS.textMuted, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 10, marginTop: 20 },
+
+  card:            {
+    backgroundColor: COLORS.surface,
+    borderRadius: 22,
+    padding: 16,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.07,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  cardTop:         { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
+  cardTopLeft:     { flex: 1, marginRight: 12 },
+  counterparty:    { fontFamily: FONTS.sans, color: COLORS.textMuted, fontSize: 13, marginBottom: 2 },
+  name:            { fontFamily: FONTS.sansBold, color: COLORS.text },
+  amount:          { fontFamily: 'Inter_800ExtraBold', fontSize: 22 },
+  amountOwe:       { color: COLORS.no },
+  amountOwed:      { color: COLORS.yes },
+  marketQ:         { fontFamily: FONTS.sans, color: COLORS.textMuted, fontSize: 12 },
+  cardActions:     { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  payBtn:          { backgroundColor: COLORS.primary, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 14 },
+  payBtnText:      { fontFamily: FONTS.sansMedium, color: '#fff', fontSize: 13 },
+  settledBtn:      { borderRadius: 10, borderWidth: 1, borderColor: COLORS.border, paddingVertical: 8, paddingHorizontal: 14 },
+  settledBtnText:  { fontFamily: FONTS.sans, color: COLORS.textMuted, fontSize: 13 },
+
+  empty:           { alignItems: 'center', paddingTop: 80 },
+  emptyTitle:      { fontFamily: FONTS.serif, fontSize: 22, color: COLORS.text, marginBottom: 8 },
+  emptySub:        { fontFamily: FONTS.sans, color: COLORS.textMuted, fontSize: 14 },
 });
